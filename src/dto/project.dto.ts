@@ -1,6 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsString } from 'class-validator';
-import { ArrayNotEmpty, IsArray, IsEmail, ValidateIf } from 'class-validator';
+import { ArrayNotEmpty, IsEmail, ValidateIf, IsString } from 'class-validator';
 
 export class ProjectCreateDto {
   @IsString()
@@ -11,7 +10,7 @@ export class ProjectCreateDto {
 
   @ValidateIf((o) => o.description != null)
   @IsString()
-  description: string;
+  description: string | null;
 
   @IsEmail({}, { each: true })
   partners: string[];
