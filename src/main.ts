@@ -2,7 +2,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { MG_PORT, MG_URI, PORT } from './config';
 import { firebaseApp } from './database/db.firebase';
-import { AppModule } from './module/app.module';
+import { AppModule } from './modules/app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { cors: true });
