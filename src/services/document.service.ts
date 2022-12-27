@@ -1,15 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { ClassCreateDto, ClassUpdateDto } from 'src/dto/class.dto';
 import { DocumentCreateDto, DocumentUpdateDto } from 'src/dto/document.dto';
 import { ResponsePattern } from 'src/interfaces/responsePattern.interface';
+import { Document } from 'src/schema/document.schema';
 
 @Injectable()
 export class DocumentService {
   constructor(
     @InjectModel('document')
-    private DocumentModel: Model<DocumentCreateDto>,
+    private DocumentModel: Model<Document>,
   ) {}
 
   async createDocument(body: DocumentCreateDto): Promise<ResponsePattern> {
