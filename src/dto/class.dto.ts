@@ -1,21 +1,26 @@
 import { PartialType } from '@nestjs/mapped-types';
-import { ValidateIf, IsString, IsISO8601, IsIn } from 'class-validator';
+import {
+  ValidateIf,
+  IsString,
+  IsISO8601,
+  IsIn,
+  IsBoolean,
+} from 'class-validator';
 
 export class ClassCreateDto {
   @IsString()
   name: string;
 
-  @IsString()
   inviteCode: string;
 
   @ValidateIf((o) => o.endDate != null)
   @IsISO8601()
   endDate: Date | null;
 
-  @IsIn([1, 2])
-  status: number;
+  @IsBoolean()
+  complete: number;
 
-  @IsIn(['CPE', 'SKE'])
+  @IsIn(['CPE', 'SKE', 'ALL'])
   major: string;
 }
 

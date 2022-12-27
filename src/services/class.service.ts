@@ -3,16 +3,27 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { ClassCreateDto, ClassUpdateDto } from 'src/dto/class.dto';
 import { ResponsePattern } from 'src/interfaces/responsePattern.interface';
+import { Class } from 'src/schema/class.schema';
 
 @Injectable()
 export class ClassService {
   constructor(
     @InjectModel('class')
-    private classModel: Model<ClassCreateDto>,
+    private classModel: Model<Class>,
   ) {}
 
   async createClass(body: ClassCreateDto): Promise<ResponsePattern> {
     try {
+      // Convert the random number to a string and add the current timestamp
+      let inviteCode: string = (+new Date() * Math.random())
+        .toString(36)
+        .substring(0, 6);
+      let findRepeat = await this.classModel.findOne({ inviteCode });
+      while (findRepeat) {
+        inviteCode = (+new Date() * Math.random()).toString(36).substring(0, 6);
+        findRepeat = await this.classModel.findOne({ inviteCode });
+      }
+      body.inviteCode = inviteCode;
       const createClass = new this.classModel(body);
       await createClass.save();
       return { statusCode: 201, message: 'Create Class Successful' };
@@ -22,9 +33,36 @@ export class ClassService {
     }
   }
 
-  async listClass(): Promise<ResponsePattern> {
+  async listClass(
+    sort: string | null,
+    select: string | null,
+    major: string | null,
+  ): Promise<ResponsePattern> {
     try {
-      const data = [];
+      const typeSort = {
+        createdAtASC: { createdAt: 1 },
+        createdAtDESC: { createdAt: -1 },
+        name: { name: 1 },
+      };
+      const typeSelect = {
+        true: { complete: true },
+        false: { complete: false },
+        all: {},
+      };
+      const typeMajor = {
+        cpe: { major: 'CPE' },
+        ske: { major: 'SKE' },
+        all: {},
+      };
+      const filterSelect = select ? typeSelect[select] : {};
+      const filterMajor = major ? typeMajor[major] : {};
+      const sortSelect = sort ? typeSort[sort] : { createdAt: -1 };
+
+      const data = await this.classModel.find(
+        { ...filterMajor, ...filterSelect },
+        null,
+        { sort: sortSelect },
+      );
       return { statusCode: 200, message: 'List Class Successful', data };
     } catch (error) {
       console.error(error);

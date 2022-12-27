@@ -8,17 +8,23 @@ export class Class {
   @Prop({ required: true })
   inviteCode: string;
 
-  @Prop({ required: true })
+  @Prop({ default: null })
   endDate: Date | null;
 
-  @Prop({ default: 0 })
-  status: number;
+  @Prop({ default: true, required: true })
+  complete: boolean;
 
   @Prop({ required: true })
   major: string;
 
   @Prop({ default: null })
   deletedAt: Date;
+
+  @Prop()
+  createdAt: Date;
+
+  @Prop()
+  updatedAt: Date;
 }
 
 export const ClassSchema = SchemaFactory.createForClass(Class);

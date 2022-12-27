@@ -7,6 +7,7 @@ import {
   Param,
   Post,
   Put,
+  Query,
 } from '@nestjs/common';
 import { ClassCreateDto, ClassUpdateDto } from 'src/dto/class.dto';
 import { ClassService } from 'src/services/class.service';
@@ -17,8 +18,12 @@ export class ClassController {
 
   @Get()
   @HttpCode(200)
-  async listClass() {
-    return await this.classService.listClass();
+  async listClass(
+    @Query('sort') sort: string,
+    @Query('select') select: string,
+    @Query('major') major: string,
+  ) {
+    return await this.classService.listClass(sort, select, major);
   }
 
   @Post()
