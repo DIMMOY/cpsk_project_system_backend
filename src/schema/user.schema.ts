@@ -3,10 +3,10 @@ import { now } from 'mongoose';
 
 @Schema({ timestamps: true })
 export class User {
-  @Prop()
+  @Prop({ required: true })
   email: string;
 
-  @Prop()
+  @Prop({ required: true })
   displayName: string;
 
   @Prop({ default: now() })
@@ -14,6 +14,12 @@ export class User {
 
   @Prop({ default: null })
   deletedAt: Date;
+
+  @Prop()
+  createdAt: Date;
+
+  @Prop()
+  updatedAt: Date;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

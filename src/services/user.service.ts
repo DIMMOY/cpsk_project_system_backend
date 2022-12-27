@@ -3,12 +3,16 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { CreateOrUpdateUserDto } from 'src/dto/user.dto';
 import { ResponsePattern } from 'src/interfaces/responsePattern.interface';
+import { User } from 'src/schema/user.schema';
+import { UserHasRole } from 'src/schema/userHasRole.schema';
 
 @Injectable()
 export class UserService {
   constructor(
     @InjectModel('user')
-    private createOrUpdateUserModel: Model<CreateOrUpdateUserDto>,
+    private userModel: Model<User>,
+    @InjectModel('user_has_role')
+    private userHasRoleModel: Model<UserHasRole>,
   ) {}
 
   async createOrUpdateUser(
@@ -16,19 +20,42 @@ export class UserService {
   ): Promise<ResponsePattern> {
     try {
       const { email } = createOrUpdateUserDto;
-      const updatedAt = { updatedAt: new Date() };
-      await this.createOrUpdateUserModel.findOneAndUpdate(
-        { email: email },
+      const findAndUpdateUser = await this.userModel.findOneAndUpdate(
+        { email, deletedAt: null },
         createOrUpdateUserDto,
-        { upsert: true },
+        { upsert: true, new: true },
       );
-      return { statusCode: 200, message: 'Update user successful' };
-    } catch (e) {
-      console.log(e);
+
+      // if new user, create role.
+      const { _id } = findAndUpdateUser;
+      const findRole = await this.userHasRoleModel
+        .find({
+          userId: _id,
+          deletedAt: null,
+        })
+        .select({ role: 1, _id: 0 });
+      let roles: Array<number> | null = findRole
+        ? findRole.map((a) => a.role)
+        : null;
+
+      if (!roles) {
+        const createRole = new this.userHasRoleModel({ userId: _id, role: 0 });
+        await createRole.save();
+        roles = [0];
+      }
+      // ===========================
+
+      return {
+        statusCode: 200,
+        message: 'Update user successful',
+        data: roles,
+      };
+    } catch (error) {
+      console.log(error);
       return {
         statusCode: 400,
-        message: 'User create or update error',
-        error: e,
+        message: 'Update user error',
+        error,
       };
     }
   }
