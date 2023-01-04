@@ -7,7 +7,7 @@ import { ResponsePattern } from 'src/interfaces/responsePattern.interface';
 import { UserHasProject } from 'src/schema/userHasProject.schema';
 
 @Injectable()
-export class ProjectCreateService {
+export class ProjectService {
   constructor(
     @InjectModel('project')
     private projectModel: Model<Project>,
@@ -60,6 +60,30 @@ export class ProjectCreateService {
     } catch (error) {
       console.log(error);
       return { statusCode: 400, message: 'Create Project Error', error };
+    }
+  }
+
+  async listProject(
+    sort: string | null,
+    filter: any,
+  ): Promise<ResponsePattern> {
+    try {
+      const typeSort = {
+        createdAtASC: { createdAt: 1 },
+        createdAtDESC: { createdAt: -1 },
+        name: { name: 1 },
+      };
+
+      const sortSelect =
+        sort && typeSort[sort] ? typeSort[sort] : { createdAt: -1 };
+
+      const data = await this.projectModel.find(filter, null, {
+        sort: sortSelect,
+      });
+      return { statusCode: 200, message: 'List Project Successful', data };
+    } catch (error) {
+      console.log(error);
+      return { statusCode: 400, message: 'List Project Error', error };
     }
   }
 }

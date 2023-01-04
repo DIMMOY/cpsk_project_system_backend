@@ -1,10 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
-import { CreateOrUpdateUserDto } from 'src/dto/user.dto';
+import { Model } from 'mongoose';
 import { ChangeCurrentRoleDto } from 'src/dto/userHasRole.dto';
 import { ResponsePattern } from 'src/interfaces/responsePattern.interface';
-import { User } from 'src/schema/user.schema';
 import { UserHasRole } from 'src/schema/userHasRole.schema';
 
 @Injectable()
@@ -14,7 +12,9 @@ export class UserHasRoleService {
     private userHasRoleModel: Model<UserHasRole>,
   ) {}
 
-  async changeCurrentRole(reqBody: ChangeCurrentRoleDto) {
+  async changeCurrentRole(
+    reqBody: ChangeCurrentRoleDto,
+  ): Promise<ResponsePattern> {
     try {
       const { userId, role } = reqBody;
       await this.userHasRoleModel.updateMany(
