@@ -8,14 +8,14 @@ import { ResponsePattern } from 'src/interfaces/responsePattern.interface';
 export class ProjectCreateService {
   constructor(
     @InjectModel('project')
-    private projectCreateModel: Model<ProjectCreateDto>,
+    private projectModel: Model<ProjectCreateDto>,
   ) {}
 
   async createProject(
     projectCreateDto: ProjectCreateDto,
   ): Promise<ResponsePattern> {
     try {
-      const createProject = new this.projectCreateModel(projectCreateDto);
+      const createProject = new this.projectModel(projectCreateDto);
       await createProject.save();
       return { statusCode: 201, message: 'Create Project Successful' };
     } catch (error) {
