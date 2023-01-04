@@ -33,15 +33,25 @@ export class UserService {
           userId: _id,
           deletedAt: null,
         })
-        .select({ role: 1, _id: 0 });
-      let roles: Array<number> | null = findRole
-        ? findRole.map((a) => a.role)
-        : null;
+        .select({ role: 1, _id: 0, currentRole: 1, userId: 1 });
+      // console.log(findRole)
+      let roles: Array<any> | null =
+        findRole && findRole.length
+          ? findRole.map((a) => ({
+              userId: a.userId, // สำหรับทดสอบเท่านั้น
+              role: a.role,
+              currentRole: a.currentRole,
+            }))
+          : null;
 
       if (!roles) {
-        const createRole = new this.userHasRoleModel({ userId: _id, role: 0 });
+        const createRole = new this.userHasRoleModel({
+          userId: _id, // สำหรับทดสอบเท่านั้น
+          role: 0,
+          currentRole: true,
+        });
         await createRole.save();
-        roles = [0];
+        roles = [{ userId: _id, role: 0, currentRole: true }];
       }
       // ===========================
 

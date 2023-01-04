@@ -12,6 +12,12 @@ export class UserHasRole {
   @Prop({ default: null })
   deletedAt: Date;
 
+  @Prop({ required: true })
+  currentRole: boolean;
+
+  @Prop()
+  lastUpdatedBy: Types.ObjectId;
+
   @Prop()
   createdAt: Date;
 
