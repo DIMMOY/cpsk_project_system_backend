@@ -1,13 +1,16 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { now, ObjectId } from 'mongoose';
+import { Types } from 'mongoose';
 
 @Schema({ timestamps: true })
 export class UserHasProject {
-  @Prop()
-  userId: ObjectId;
+  @Prop({ required: true })
+  projectId: Types.ObjectId;
+
+  @Prop({ required: true })
+  userId: Types.ObjectId;
 
   @Prop()
-  status: string;
+  role: number;
 
   @Prop({ default: null })
   deletedAt: Date;

@@ -1,7 +1,20 @@
-import { Type } from 'class-transformer';
-import { ArrayNotEmpty, IsEmail, ValidateIf, IsString } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import { ValidateIf, IsString, IsNotEmpty, IsArray } from 'class-validator';
+import { Types } from 'mongoose';
+import { toMongoObjectId } from 'src/utils/mongoDB.utils';
 
 export class ProjectCreateDto {
+  //ทดลองสำหรับ userId ต้องกลับมาแก้นะ
+  @IsNotEmpty()
+  @Type(() => Types.ObjectId)
+  @Transform(toMongoObjectId)
+  userId: Types.ObjectId;
+
+  @IsNotEmpty()
+  @Type(() => Types.ObjectId)
+  @Transform(toMongoObjectId)
+  classId: Types.ObjectId;
+
   @IsString()
   nameTH: string;
 
@@ -12,10 +25,17 @@ export class ProjectCreateDto {
   @IsString()
   description: string | null;
 
-  @IsEmail({}, { each: true })
-  partners: string[];
+  @IsArray()
+  @Type(() => Types.ObjectId)
+  @Transform(({ value, key }) =>
+    value.map((id) => toMongoObjectId({ value: id, key })),
+  )
+  partners: Types.ObjectId[];
 
-  @ArrayNotEmpty()
-  @IsEmail({}, { each: true })
-  advisors: string[];
+  @IsArray()
+  @Type(() => Types.ObjectId)
+  @Transform(({ value, key }) =>
+    value.map((id) => toMongoObjectId({ value: id, key })),
+  )
+  advisors: Types.ObjectId[];
 }
