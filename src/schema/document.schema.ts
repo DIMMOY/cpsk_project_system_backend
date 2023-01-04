@@ -8,6 +8,9 @@ export class Document {
   @Prop({ required: true })
   description: string;
 
+  @Prop({ default: true })
+  status: boolean;
+
   @Prop({ default: null })
   deletedAt: Date;
 }

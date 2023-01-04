@@ -9,27 +9,38 @@ import { Document } from 'src/schema/document.schema';
 export class DocumentService {
   constructor(
     @InjectModel('document')
-    private DocumentModel: Model<Document>,
+    private documentModel: Model<Document>,
   ) {}
 
   async createDocument(body: DocumentCreateDto): Promise<ResponsePattern> {
     try {
-      const createDocument = new this.DocumentModel(body);
+      const createDocument = new this.documentModel(body);
       await createDocument.save();
-      return { statusCode: 201, message: 'Create Class Successful' };
+      return { statusCode: 201, message: 'Create Document Successful' };
     } catch (error) {
       console.error(error);
-      return { statusCode: 400, message: 'Create Class Error', error };
+      return { statusCode: 400, message: 'Create Document Error', error };
     }
   }
 
-  async listDocument(): Promise<ResponsePattern> {
+  async listDocument(sort: string | null): Promise<ResponsePattern> {
     try {
-      const data = [];
-      return { statusCode: 200, message: 'List Class Successful', data };
+      const typeSort = {
+        createdAtASC: { createdAt: 1 },
+        createdAtDESC: { createdAt: -1 },
+        name: { name: 1 },
+      };
+
+      const sortSelect =
+        sort && typeSort[sort] ? typeSort[sort] : { createdAt: -1 };
+
+      const data = await this.documentModel.find({}, null, {
+        sort: sortSelect,
+      });
+      return { statusCode: 200, message: 'List Document Successful', data };
     } catch (error) {
       console.error(error);
-      return { statusCode: 400, message: 'List Class Error', error };
+      return { statusCode: 400, message: 'List Document Error', error };
     }
   }
 
@@ -38,27 +49,27 @@ export class DocumentService {
     body: DocumentUpdateDto,
   ): Promise<ResponsePattern> {
     try {
-      await this.DocumentModel.updateOne({ _id }, body, {
+      await this.documentModel.updateOne({ _id }, body, {
         runValidators: true,
       });
-      return { statusCode: 200, message: 'Update Class Successful' };
+      return { statusCode: 200, message: 'Update Document Successful' };
     } catch (error) {
       console.error(error);
-      return { statusCode: 400, message: 'Update Class Error', error };
+      return { statusCode: 400, message: 'Update Document Error', error };
     }
   }
 
   async deleteDocument(_id: string): Promise<ResponsePattern> {
     try {
-      await this.DocumentModel.updateOne(
+      await this.documentModel.updateOne(
         { _id },
         { deletedAt: new Date() },
         { runValidators: true },
       );
-      return { statusCode: 200, message: 'Delete Class Successful' };
+      return { statusCode: 200, message: 'Delete Document Successful' };
     } catch (error) {
       console.error(error);
-      return { statusCode: 400, message: 'Delete Class Error', error };
+      return { statusCode: 400, message: 'Delete Document Error', error };
     }
   }
 }

@@ -7,6 +7,7 @@ import {
   Param,
   Post,
   Put,
+  Query,
 } from '@nestjs/common';
 import { DocumentCreateDto, DocumentUpdateDto } from 'src/dto/document.dto';
 import { DocumentService } from 'src/services/document.service';
@@ -17,8 +18,8 @@ export class DocumentController {
 
   @Get()
   @HttpCode(200)
-  async listDocument() {
-    return await this.documentService.listDocument();
+  async listDocument(@Query('sort') sort: string) {
+    return await this.documentService.listDocument(sort);
   }
 
   @Post()
