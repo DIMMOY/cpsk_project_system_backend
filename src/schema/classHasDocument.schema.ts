@@ -1,16 +1,19 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { ObjectId } from 'mongoose';
+import { Types } from 'mongoose';
 
 @Schema({ timestamps: true })
 export class ClassHasDocument {
   @Prop({ required: true })
-  classId: ObjectId;
+  classId: Types.ObjectId;
 
   @Prop({ required: true })
-  documentId: ObjectId;
+  documentId: Types.ObjectId;
 
-  @Prop({ required: true })
-  lastUpdatedBy: ObjectId;
+  // @Prop({ default: null })
+  // description: string;
+
+  @Prop()
+  lastUpdatedBy: Types.ObjectId;
 
   @Prop({ default: null })
   deletedAt: Date;
