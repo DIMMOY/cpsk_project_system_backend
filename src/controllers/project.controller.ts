@@ -1,6 +1,6 @@
 import { Body, Controller, HttpCode, Post } from '@nestjs/common';
 import { ProjectCreateDto } from 'src/dto/project.dto';
-import { ProjectCreateService } from 'src/services/project/project.create.service';
+import { ProjectCreateService } from 'src/services/project.service';
 
 @Controller('project')
 export class ProjectController {
@@ -9,6 +9,6 @@ export class ProjectController {
   @Post()
   @HttpCode(201)
   async createProject(@Body() projectCreateDto: ProjectCreateDto) {
-    return await this.projectCreateService.projectCreate(projectCreateDto);
+    return await this.projectCreateService.createProject(projectCreateDto);
   }
 }

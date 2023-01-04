@@ -1,19 +1,28 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { now } from 'mongoose';
+import { Types } from 'mongoose';
 
 @Schema({ timestamps: true })
 export class Project {
-  @Prop()
+  @Prop({ required: true })
   nameTH: string;
 
-  @Prop()
+  @Prop({ required: true })
   nameEN: string;
 
-  @Prop()
+  @Prop({ required: true })
+  classId: Types.ObjectId;
+
+  @Prop({ default: null })
   description: string;
 
   @Prop({ default: null })
   deletedAt: Date;
+
+  @Prop()
+  createdAt: Date;
+
+  @Prop()
+  updatedAt: Date;
 }
 
 export const ProjectSchema = SchemaFactory.createForClass(Project);

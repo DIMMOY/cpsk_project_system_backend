@@ -11,7 +11,7 @@ export class ProjectCreateService {
     private projectCreateModel: Model<ProjectCreateDto>,
   ) {}
 
-  async projectCreate(
+  async createProject(
     projectCreateDto: ProjectCreateDto,
   ): Promise<ResponsePattern> {
     try {
