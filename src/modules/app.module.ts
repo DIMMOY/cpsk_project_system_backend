@@ -8,6 +8,7 @@ import { ClassModule } from './class.module';
 import { DocumentModule } from './document.module';
 import { ProjectModule } from './project.module';
 import { UserModule } from './user.module';
+import { MeetingScheduleModule } from './meetingSchedule.module';
 @Module({
   imports: [
     MongooseModule.forRoot(MG_URI),
@@ -16,6 +17,7 @@ import { UserModule } from './user.module';
     UserModule,
     ClassModule,
     DocumentModule,
+    MeetingScheduleModule,
   ],
   controllers: [AppController],
   providers: [AppService],
