@@ -1,4 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Types } from 'mongoose';
 
 @Schema({ timestamps: true })
 export class Class {
@@ -19,6 +20,9 @@ export class Class {
 
   @Prop({ default: null })
   deletedAt: Date;
+
+  @Prop()
+  lastUpdatedBy: Types.ObjectId;
 
   @Prop()
   createdAt: Date;

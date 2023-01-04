@@ -50,19 +50,27 @@ export class ClassService {
         all: {},
       };
       const typeMajor = {
-        cpe: { major: 'CPE' },
-        ske: { major: 'SKE' },
+        cpe: { major: { $in: ['ALL', 'CPE'] } },
+        ske: { major: { $in: ['ALL', 'SKE'] } },
         all: {},
       };
-      const filterSelect = select ? typeSelect[select] : {};
-      const filterMajor = major ? typeMajor[major] : {};
-      const sortSelect = sort ? typeSort[sort] : { createdAt: -1 };
+      const filterSelect =
+        select && typeSelect[select.toLowerCase()]
+          ? typeSelect[select.toLowerCase()]
+          : {};
+      const filterMajor =
+        major && typeMajor[major.toLowerCase()]
+          ? typeMajor[major.toLowerCase()]
+          : {};
+      const sortSelect =
+        sort && typeSort[sort] ? typeSort[sort] : { createdAt: -1 };
 
       const data = await this.classModel.find(
         { ...filterMajor, ...filterSelect },
         null,
         { sort: sortSelect },
       );
+
       return { statusCode: 200, message: 'List Class Successful', data };
     } catch (error) {
       console.error(error);
