@@ -14,7 +14,7 @@ export class ProjectSendDocumentService {
     private projectSendDocumentModel: Model<ProjectSendDocument>,
   ) {}
 
-  async createOrUpdateProjectSendDocument(
+  async createOrUpdate(
     body: ProjectSendDocumentCreateDto,
   ): Promise<ResponsePattern> {
     try {
@@ -42,10 +42,7 @@ export class ProjectSendDocumentService {
     }
   }
 
-  async listProjectSendDocument(
-    sort: string | null,
-    filter: any,
-  ): Promise<ResponsePattern> {
+  async list(sort: string | null, filter: any): Promise<ResponsePattern> {
     try {
       const typeSort = {
         createdAtASC: { createdAt: 1 },
@@ -75,10 +72,7 @@ export class ProjectSendDocumentService {
     }
   }
 
-  async updateProjectSendDocument(
-    _id: string,
-    body: DocumentUpdateDto,
-  ): Promise<ResponsePattern> {
+  async update(_id: string, body: DocumentUpdateDto): Promise<ResponsePattern> {
     try {
       await this.projectSendDocumentModel.updateOne({ _id }, body, {
         runValidators: true,
@@ -97,7 +91,7 @@ export class ProjectSendDocumentService {
     }
   }
 
-  async deleteProjectSendDocument(_id: string): Promise<ResponsePattern> {
+  async delete(_id: string): Promise<ResponsePattern> {
     try {
       await this.projectSendDocumentModel.updateOne(
         { _id },

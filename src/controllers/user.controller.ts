@@ -15,7 +15,7 @@ export class UserController {
   @Post()
   @HttpCode(201)
   async createProject(@Body() reqBody: CreateOrUpdateUserDto) {
-    return await this.userService.createOrUpdateUser(reqBody);
+    return await this.userService.createOrUpdate(reqBody);
   }
 
   @Patch('/current-role')

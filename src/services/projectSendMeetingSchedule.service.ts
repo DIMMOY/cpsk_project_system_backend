@@ -14,7 +14,7 @@ export class ProjectSendMeetingScheduleService {
     private projectSendMeetingScheduleModel: Model<ProjectSendMeetingSchedule>,
   ) {}
 
-  async createOrUpdateProjectSendMeetingSchedule(
+  async createOrUpdate(
     body: ProjectSendMeetingScheduleCreateDto,
   ): Promise<ResponsePattern> {
     try {
@@ -42,10 +42,7 @@ export class ProjectSendMeetingScheduleService {
     }
   }
 
-  async listProjectSendMeetingSchedule(
-    sort: string | null,
-    filter: any,
-  ): Promise<ResponsePattern> {
+  async list(sort: string | null, filter: any): Promise<ResponsePattern> {
     try {
       const typeSort = {
         createdAtASC: { createdAt: 1 },
@@ -75,10 +72,7 @@ export class ProjectSendMeetingScheduleService {
     }
   }
 
-  async updateProjectSendMeetingSchedule(
-    _id: string,
-    body: DocumentUpdateDto,
-  ): Promise<ResponsePattern> {
+  async update(_id: string, body: DocumentUpdateDto): Promise<ResponsePattern> {
     try {
       await this.projectSendMeetingScheduleModel.updateOne({ _id }, body, {
         runValidators: true,
@@ -97,9 +91,7 @@ export class ProjectSendMeetingScheduleService {
     }
   }
 
-  async deleteProjectSendMeetingSchedule(
-    _id: string,
-  ): Promise<ResponsePattern> {
+  async delete(_id: string): Promise<ResponsePattern> {
     try {
       await this.projectSendMeetingScheduleModel.updateOne(
         { _id },

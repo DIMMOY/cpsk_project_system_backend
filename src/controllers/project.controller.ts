@@ -31,7 +31,7 @@ export class ProjectController {
   @Post(defaultPath)
   @HttpCode(201)
   async createProject(@Body() projectCreateDto: ProjectCreateDto) {
-    return await this.projectService.createProject(projectCreateDto);
+    return await this.projectService.create(projectCreateDto);
   }
 
   @Get(`class/:id/${defaultPath}`)
@@ -40,7 +40,7 @@ export class ProjectController {
     @Param('id') classId: string,
     @Query('sort') sort: string,
   ) {
-    return await this.projectService.listProject(sort, {
+    return await this.projectService.list(sort, {
       classId: toMongoObjectId({ value: classId, key: 'classId' }),
     });
   }
@@ -52,22 +52,23 @@ export class ProjectController {
     @Param('projectId') projectId: string,
     @Query('sort') sort: string,
   ) {
-    const classHasDocuments =
-      await this.classHasDocumentService.listClassHasDocument(sort, {
-        classId: toMongoObjectId({ value: classId, key: 'classId' }),
-        deletedAt: null,
-      });
+    const classHasDocuments = await this.classHasDocumentService.list(sort, {
+      classId: toMongoObjectId({ value: classId, key: 'classId' }),
+      deletedAt: null,
+    });
     if (classHasDocuments.statusCode !== 200) return classHasDocuments;
 
     const documentIds = classHasDocuments.data.map(
       (e) => new Types.ObjectId(e.documentId._id),
     );
-    const projectSendDocument =
-      await this.projectSendDocumentService.listProjectSendDocument(sort, {
+    const projectSendDocument = await this.projectSendDocumentService.list(
+      sort,
+      {
         documentId: { $in: documentIds },
         projectId: toMongoObjectId({ value: projectId, key: 'projectId' }),
         deletedAt: null,
-      });
+      },
+    );
 
     // filter data
     const data = [];
@@ -113,13 +114,10 @@ export class ProjectController {
     @Query('sort') sort: string,
   ) {
     const classHasMeetingSchedule =
-      await this.classHasMeetingScheduleService.listClassHasMeetingSchedule(
-        sort,
-        {
-          classId: toMongoObjectId({ value: classId, key: 'classId' }),
-          deletedAt: null,
-        },
-      );
+      await this.classHasMeetingScheduleService.list(sort, {
+        classId: toMongoObjectId({ value: classId, key: 'classId' }),
+        deletedAt: null,
+      });
     if (classHasMeetingSchedule.statusCode !== 200)
       return classHasMeetingSchedule;
 
@@ -127,14 +125,11 @@ export class ProjectController {
       (e) => new Types.ObjectId(e.meetingScheduleId._id),
     );
     const projectSendMeetingSchedule =
-      await this.projectSendMeetingSchedulService.listProjectSendMeetingSchedule(
-        sort,
-        {
-          meetingScheduleId: { $in: meetingScheduleIds },
-          projectId: toMongoObjectId({ value: projectId, key: 'projectId' }),
-          deletedAt: null,
-        },
-      );
+      await this.projectSendMeetingSchedulService.list(sort, {
+        meetingScheduleId: { $in: meetingScheduleIds },
+        projectId: toMongoObjectId({ value: projectId, key: 'projectId' }),
+        deletedAt: null,
+      });
 
     // filter data
     const data = [];

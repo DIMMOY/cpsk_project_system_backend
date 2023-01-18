@@ -15,9 +15,7 @@ export class ProjectService {
     private userHasProjectModel: Model<UserHasProject>,
   ) {}
 
-  async createProject(
-    projectCreateDto: ProjectCreateDto,
-  ): Promise<ResponsePattern> {
+  async create(projectCreateDto: ProjectCreateDto): Promise<ResponsePattern> {
     try {
       const {
         userId, //ชั่วคราว
@@ -63,10 +61,7 @@ export class ProjectService {
     }
   }
 
-  async listProject(
-    sort: string | null,
-    filter: any,
-  ): Promise<ResponsePattern> {
+  async list(sort: string | null, filter: any): Promise<ResponsePattern> {
     try {
       const typeSort = {
         createdAtASC: { createdAt: 1 },

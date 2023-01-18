@@ -15,7 +15,7 @@ export class UserService {
     private userHasRoleModel: Model<UserHasRole>,
   ) {}
 
-  async createOrUpdateUser(
+  async createOrUpdate(
     createOrUpdateUserDto: CreateOrUpdateUserDto,
   ): Promise<ResponsePattern> {
     try {

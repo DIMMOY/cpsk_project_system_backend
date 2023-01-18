@@ -13,7 +13,7 @@ export class ClassHasMeetingScheduleService {
     private classHasMeetingScheduleModel: Model<ClassHasMeetingSchedule>,
   ) {}
 
-  async createOrUpdateClassHasMeetingSchedule(
+  async createOrUpdate(
     body: ClassHasMeetingScheduleCreateDto,
   ): Promise<ResponsePattern> {
     try {
@@ -41,10 +41,7 @@ export class ClassHasMeetingScheduleService {
     }
   }
 
-  async listClassHasMeetingSchedule(
-    sort: string | null,
-    filter: any,
-  ): Promise<ResponsePattern> {
+  async list(sort: string | null, filter: any): Promise<ResponsePattern> {
     try {
       const typeSort = {
         createdAtASC: { createdAt: 1 },
@@ -75,10 +72,7 @@ export class ClassHasMeetingScheduleService {
     }
   }
 
-  async updateClassHasMeetingSchedule(
-    _id: string,
-    body: DocumentUpdateDto,
-  ): Promise<ResponsePattern> {
+  async update(_id: string, body: DocumentUpdateDto): Promise<ResponsePattern> {
     try {
       await this.classHasMeetingScheduleModel.updateOne({ _id }, body, {
         runValidators: true,
@@ -97,7 +91,7 @@ export class ClassHasMeetingScheduleService {
     }
   }
 
-  async deleteClassHasMeetingSchedule(_id: string): Promise<ResponsePattern> {
+  async delete(_id: string): Promise<ResponsePattern> {
     try {
       await this.classHasMeetingScheduleModel.updateOne(
         { _id },

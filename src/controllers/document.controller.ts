@@ -31,7 +31,7 @@ export class DocumentController {
   @Get(defaultPath)
   @HttpCode(200)
   async listDocument(@Query('sort') sort: string) {
-    return await this.documentService.listDocument(sort, {});
+    return await this.documentService.list(sort, {});
   }
 
   @Get(`class/:id/${defaultPath}`)
@@ -41,15 +41,14 @@ export class DocumentController {
     @Query('sort') sort: string,
     @Query('status') status: string,
   ) {
-    const documents = await this.documentService.listDocument(sort, {
+    const documents = await this.documentService.list(sort, {
       deletedAt: null,
     });
     if (documents.statusCode !== 200) return documents;
-    const classHasDocuments =
-      await this.classHasDocumentService.listClassHasDocument(sort, {
-        classId: toMongoObjectId({ value: classId, key: 'classId' }),
-        deletedAt: null,
-      });
+    const classHasDocuments = await this.classHasDocumentService.list(sort, {
+      classId: toMongoObjectId({ value: classId, key: 'classId' }),
+      deletedAt: null,
+    });
     if (classHasDocuments.statusCode !== 200) return classHasDocuments;
 
     // filter data
@@ -94,14 +93,12 @@ export class DocumentController {
   @Post(defaultPath)
   @HttpCode(201)
   async createDocument(@Body() body: DocumentCreateDto) {
-    return await this.documentService.createDocument(body);
+    return await this.documentService.create(body);
   }
 
   @Post(`class/:id/${defaultPath}`)
   async setDateDocumentInClass(@Body() body: ClassHasDocumentCreateDto) {
-    return await this.classHasDocumentService.createOrUpdateClassHasDocument(
-      body,
-    );
+    return await this.classHasDocumentService.createOrUpdate(body);
   }
 
   @Put(`${defaultPath}/:id`)
@@ -110,12 +107,12 @@ export class DocumentController {
     @Param('id') id: string,
     @Body() body: DocumentUpdateDto,
   ) {
-    return await this.documentService.updateDocument(id, body);
+    return await this.documentService.update(id, body);
   }
 
   @Delete(`${defaultPath}/:id`)
   @HttpCode(200)
   async deleteDocument(@Param('id') id: string) {
-    return await this.documentService.deleteDocument(id);
+    return await this.documentService.delete(id);
   }
 }

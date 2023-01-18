@@ -12,7 +12,7 @@ export class ClassService {
     private classModel: Model<Class>,
   ) {}
 
-  async createClass(body: ClassCreateDto): Promise<ResponsePattern> {
+  async create(body: ClassCreateDto): Promise<ResponsePattern> {
     try {
       // Convert the random number to a string and add the current timestamp
       let inviteCode: string = (+new Date() * Math.random())
@@ -33,7 +33,7 @@ export class ClassService {
     }
   }
 
-  async listClass(
+  async list(
     sort: string | null,
     select: string | null,
     major: string | null,
@@ -78,10 +78,7 @@ export class ClassService {
     }
   }
 
-  async updateClass(
-    _id: string,
-    body: ClassUpdateDto,
-  ): Promise<ResponsePattern> {
+  async update(_id: string, body: ClassUpdateDto): Promise<ResponsePattern> {
     try {
       await this.classModel.updateOne({ _id }, body, {
         runValidators: true,
@@ -93,7 +90,7 @@ export class ClassService {
     }
   }
 
-  async deleteClass(_id: string): Promise<ResponsePattern> {
+  async delete(_id: string): Promise<ResponsePattern> {
     try {
       await this.classModel.updateOne(
         { _id },

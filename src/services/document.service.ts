@@ -12,7 +12,7 @@ export class DocumentService {
     private documentModel: Model<Document>,
   ) {}
 
-  async createDocument(body: DocumentCreateDto): Promise<ResponsePattern> {
+  async create(body: DocumentCreateDto): Promise<ResponsePattern> {
     try {
       const createDocument = new this.documentModel(body);
       await createDocument.save();
@@ -23,10 +23,7 @@ export class DocumentService {
     }
   }
 
-  async listDocument(
-    sort: string | null,
-    filter: any,
-  ): Promise<ResponsePattern> {
+  async list(sort: string | null, filter: any): Promise<ResponsePattern> {
     try {
       const typeSort = {
         createdAtASC: { createdAt: 1 },
@@ -47,10 +44,7 @@ export class DocumentService {
     }
   }
 
-  async updateDocument(
-    _id: string,
-    body: DocumentUpdateDto,
-  ): Promise<ResponsePattern> {
+  async update(_id: string, body: DocumentUpdateDto): Promise<ResponsePattern> {
     try {
       await this.documentModel.updateOne({ _id }, body, {
         runValidators: true,
@@ -62,7 +56,7 @@ export class DocumentService {
     }
   }
 
-  async deleteDocument(_id: string): Promise<ResponsePattern> {
+  async delete(_id: string): Promise<ResponsePattern> {
     try {
       await this.documentModel.updateOne(
         { _id },

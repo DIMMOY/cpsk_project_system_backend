@@ -15,9 +15,7 @@ export class MeetingScheduleService {
     private meetingScheduleModel: Model<MeetingSchedule>,
   ) {}
 
-  async createMeetingSchedule(
-    body: MeetingScheduleCreateDto,
-  ): Promise<ResponsePattern> {
+  async create(body: MeetingScheduleCreateDto): Promise<ResponsePattern> {
     try {
       const createDocument = new this.meetingScheduleModel(body);
       await createDocument.save();
@@ -32,10 +30,7 @@ export class MeetingScheduleService {
     }
   }
 
-  async listMeetingSchedule(
-    sort: string | null,
-    filter: any,
-  ): Promise<ResponsePattern> {
+  async list(sort: string | null, filter: any): Promise<ResponsePattern> {
     try {
       const typeSort = {
         createdAtASC: { createdAt: 1 },
@@ -60,7 +55,7 @@ export class MeetingScheduleService {
     }
   }
 
-  async updateMeetingSchedule(
+  async update(
     _id: string,
     body: MeetingScheduleUpdateDto,
   ): Promise<ResponsePattern> {
@@ -79,7 +74,7 @@ export class MeetingScheduleService {
     }
   }
 
-  async deleteMeetingSchedule(_id: string): Promise<ResponsePattern> {
+  async delete(_id: string): Promise<ResponsePattern> {
     try {
       await this.meetingScheduleModel.updateOne(
         { _id },

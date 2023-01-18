@@ -14,7 +14,7 @@ export class ClassHasDocumentService {
     private classHasDocumentModel: Model<ClassHasDocument>,
   ) {}
 
-  async createOrUpdateClassHasDocument(
+  async createOrUpdate(
     body: ClassHasDocumentCreateDto,
   ): Promise<ResponsePattern> {
     try {
@@ -39,10 +39,7 @@ export class ClassHasDocumentService {
     }
   }
 
-  async listClassHasDocument(
-    sort: string | null,
-    filter: any,
-  ): Promise<ResponsePattern> {
+  async list(sort: string | null, filter: any): Promise<ResponsePattern> {
     try {
       const typeSort = {
         createdAtASC: { createdAt: 1 },
@@ -69,10 +66,7 @@ export class ClassHasDocumentService {
     }
   }
 
-  async updateClassHasDocument(
-    _id: string,
-    body: DocumentUpdateDto,
-  ): Promise<ResponsePattern> {
+  async update(_id: string, body: DocumentUpdateDto): Promise<ResponsePattern> {
     try {
       await this.classHasDocumentModel.updateOne({ _id }, body, {
         runValidators: true,
@@ -88,7 +82,7 @@ export class ClassHasDocumentService {
     }
   }
 
-  async deleteClassHasDocument(_id: string): Promise<ResponsePattern> {
+  async delete(_id: string): Promise<ResponsePattern> {
     try {
       await this.classHasDocumentModel.updateOne(
         { _id },

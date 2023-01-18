@@ -25,24 +25,24 @@ export class ClassController {
     @Query('select') select: string,
     @Query('major') major: string,
   ) {
-    return await this.classService.listClass(sort, select, major);
+    return await this.classService.list(sort, select, major);
   }
 
   @Post(defaultPath)
   @HttpCode(201)
   async createClass(@Body() body: ClassCreateDto) {
-    return await this.classService.createClass(body);
+    return await this.classService.create(body);
   }
 
   @Put(`${defaultPath}/:id`)
   @HttpCode(200)
   async updateClass(@Param('id') id: string, @Body() body: ClassUpdateDto) {
-    return await this.classService.updateClass(id, body);
+    return await this.classService.update(id, body);
   }
 
   @Delete(`${defaultPath}/:id`)
   @HttpCode(200)
   async deleteClass(@Param('id') id: string) {
-    return await this.classService.deleteClass(id);
+    return await this.classService.delete(id);
   }
 }
