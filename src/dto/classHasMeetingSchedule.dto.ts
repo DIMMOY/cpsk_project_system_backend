@@ -10,7 +10,7 @@ import {
 import { Types } from 'mongoose';
 import { toMongoObjectId } from 'src/utils/mongoDB.utils';
 
-export class ClassHasDocumentCreateDto {
+export class ClassHasMeetingScheduleCreateDto {
   @IsNotEmpty()
   @Type(() => Types.ObjectId)
   @Transform(toMongoObjectId)
@@ -19,7 +19,7 @@ export class ClassHasDocumentCreateDto {
   @IsNotEmpty()
   @Type(() => Types.ObjectId)
   @Transform(toMongoObjectId)
-  documentId: string;
+  meetingScheduleId: string;
 
   // @ValidateIf((o) => o.endDate != null)
   @IsISO8601()

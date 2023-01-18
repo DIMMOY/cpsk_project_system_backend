@@ -12,11 +12,13 @@ import {
 import { ClassCreateDto, ClassUpdateDto } from 'src/dto/class.dto';
 import { ClassService } from 'src/services/class.service';
 
-@Controller('class')
+const defaultPath = 'class';
+
+@Controller()
 export class ClassController {
   constructor(private readonly classService: ClassService) {}
 
-  @Get()
+  @Get(defaultPath)
   @HttpCode(200)
   async listClass(
     @Query('sort') sort: string,
@@ -26,19 +28,19 @@ export class ClassController {
     return await this.classService.listClass(sort, select, major);
   }
 
-  @Post()
+  @Post(defaultPath)
   @HttpCode(201)
   async createClass(@Body() body: ClassCreateDto) {
     return await this.classService.createClass(body);
   }
 
-  @Put(':id')
+  @Put(`${defaultPath}/:id`)
   @HttpCode(200)
   async updateClass(@Param('id') id: string, @Body() body: ClassUpdateDto) {
     return await this.classService.updateClass(id, body);
   }
 
-  @Delete(':id')
+  @Delete(`${defaultPath}/:id`)
   @HttpCode(200)
   async deleteClass(@Param('id') id: string) {
     return await this.classService.deleteClass(id);
