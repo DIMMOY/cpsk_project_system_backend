@@ -32,7 +32,10 @@ export class MeetingScheduleService {
     }
   }
 
-  async listMeetingSchedule(sort: string | null): Promise<ResponsePattern> {
+  async listMeetingSchedule(
+    sort: string | null,
+    filter: any,
+  ): Promise<ResponsePattern> {
     try {
       const typeSort = {
         createdAtASC: { createdAt: 1 },
@@ -43,7 +46,7 @@ export class MeetingScheduleService {
       const sortSelect =
         sort && typeSort[sort] ? typeSort[sort] : { createdAt: -1 };
 
-      const data = await this.meetingScheduleModel.find({}, null, {
+      const data = await this.meetingScheduleModel.find(filter, null, {
         sort: sortSelect,
       });
       return {

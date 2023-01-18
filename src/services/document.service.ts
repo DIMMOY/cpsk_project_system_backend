@@ -23,7 +23,10 @@ export class DocumentService {
     }
   }
 
-  async listDocument(sort: string | null): Promise<ResponsePattern> {
+  async listDocument(
+    sort: string | null,
+    filter: any,
+  ): Promise<ResponsePattern> {
     try {
       const typeSort = {
         createdAtASC: { createdAt: 1 },
@@ -34,12 +37,12 @@ export class DocumentService {
       const sortSelect =
         sort && typeSort[sort] ? typeSort[sort] : { createdAt: -1 };
 
-      const data = await this.documentModel.find({}, null, {
+      const data = await this.documentModel.find(filter, null, {
         sort: sortSelect,
       });
       return { statusCode: 200, message: 'List Document Successful', data };
     } catch (error) {
-      console.error(error);
+      console.log(error);
       return { statusCode: 400, message: 'List Document Error', error };
     }
   }
