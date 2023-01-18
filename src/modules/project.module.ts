@@ -20,26 +20,10 @@ import { ClassHasMeetingScheduleSchema } from 'src/schema/classHasMeetingSchedul
     MongooseModule.forFeature([
       { name: 'project', schema: ProjectSchema },
       { name: 'user_has_project', schema: UserHasProjectSchema },
-      { name: 'class_has_document', schema: ClassHasDocumentSchema },
-      {
-        name: 'class_has_meeting_schedule',
-        schema: ClassHasMeetingScheduleSchema,
-      },
-      { name: 'project_send_document', schema: ProjectSendDocumentSchema },
-      {
-        name: 'project_send_meeting_schedule',
-        schema: ProjectSendMeetingScheduleSchema,
-      },
     ]),
   ],
   controllers: [ProjectController],
-  providers: [
-    ProjectService,
-    ClassHasDocumentService,
-    ClassHasMeetingScheduleService,
-    ProjectSendDocumentService,
-    ProjectSendMeetingScheduleService,
-  ],
+  providers: [ProjectService],
   exports: [ProjectService],
 })
 export class ProjectModule {}

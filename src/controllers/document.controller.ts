@@ -25,7 +25,7 @@ export class DocumentController {
   constructor(
     private readonly documentService: DocumentService,
     private readonly classHasDocumentService: ClassHasDocumentService,
-    private readonly userSendDocumentService: ProjectSendDocumentService,
+    private readonly projectSendDocumentService: ProjectSendDocumentService,
   ) {}
 
   @Get(defaultPath)
@@ -87,6 +87,67 @@ export class DocumentController {
       statusCode: documents.statusCode,
       message: documents.message,
       data: filterData,
+    };
+  }
+
+  @Get(`class/:classId/project/:projectId/${defaultPath}`)
+  @HttpCode(200)
+  async listSendDocumentInClass(
+    @Param('classId') classId: string,
+    @Param('projectId') projectId: string,
+    @Query('sort') sort: string,
+  ) {
+    const classHasDocuments = await this.classHasDocumentService.list(sort, {
+      classId: toMongoObjectId({ value: classId, key: 'classId' }),
+      deletedAt: null,
+    });
+    if (classHasDocuments.statusCode !== 200) return classHasDocuments;
+
+    const documentIds = classHasDocuments.data.map(
+      (e) => new Types.ObjectId(e.documentId._id),
+    );
+    const projectSendDocument = await this.projectSendDocumentService.list(
+      sort,
+      {
+        documentId: { $in: documentIds },
+        projectId: toMongoObjectId({ value: projectId, key: 'projectId' }),
+        deletedAt: null,
+      },
+    );
+
+    // filter data
+    const data = [];
+    for (let i = 0; i < classHasDocuments.data.length; i++) {
+      const {
+        _id,
+        documentId: documentIdData,
+        endDate,
+        startDate,
+      } = classHasDocuments.data[i];
+      const { _id: documentId, name, description } = documentIdData;
+      const findData = projectSendDocument.data.find(
+        (e) => e.documentId._id?.toString() === documentId?.toString(),
+      );
+      const sendStatus = findData
+        ? findData.updatedAt.getTime() <= endDate.getTime()
+          ? 1
+          : 2
+        : 0;
+      data.push({
+        _id,
+        documentId,
+        name,
+        description,
+        startDate,
+        endDate,
+        sendedAt: findData ? findData.updatedAt : null,
+        sendStatus,
+      });
+    }
+    return {
+      statusCode: classHasDocuments.statusCode,
+      message: classHasDocuments.message,
+      data,
     };
   }
 
