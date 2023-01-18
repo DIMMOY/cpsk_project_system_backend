@@ -9,7 +9,7 @@ export class Project {
   @Prop({ required: true })
   nameEN: string;
 
-  @Prop({ required: true })
+  @Prop({ required: true, type: Types.ObjectId, ref: 'class' })
   classId: Types.ObjectId;
 
   @Prop({ default: null })

@@ -3,7 +3,7 @@ import { Types } from 'mongoose';
 
 @Schema({ timestamps: true })
 export class UserHasRole {
-  @Prop({ required: true })
+  @Prop({ required: true, type: Types.ObjectId, ref: 'user' })
   userId: Types.ObjectId;
 
   @Prop({ required: true })

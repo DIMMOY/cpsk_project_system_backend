@@ -3,10 +3,10 @@ import { Types } from 'mongoose';
 
 @Schema({ timestamps: true })
 export class UserHasProject {
-  @Prop({ required: true })
+  @Prop({ required: true, type: Types.ObjectId, ref: 'project' })
   projectId: Types.ObjectId;
 
-  @Prop({ required: true })
+  @Prop({ required: true, type: Types.ObjectId, ref: 'user' })
   userId: Types.ObjectId;
 
   @Prop()

@@ -2,12 +2,12 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Types } from 'mongoose';
 
 @Schema({ timestamps: true })
-export class ClassHasDocument {
+export class ClassHasMeetingSchedule {
   @Prop({ required: true, type: Types.ObjectId, ref: 'class' })
   classId: Types.ObjectId;
 
-  @Prop({ required: true, type: Types.ObjectId, ref: 'document' })
-  documentId: Types.ObjectId;
+  @Prop({ required: true, type: Types.ObjectId, ref: 'meeting_schedule' })
+  meetingScheduleId: Types.ObjectId;
 
   @Prop({ default: null })
   startDate: Date;
@@ -22,5 +22,6 @@ export class ClassHasDocument {
   deletedAt: Date;
 }
 
-export const ClassHasDocumentSchema =
-  SchemaFactory.createForClass(ClassHasDocument);
+export const ClassHasMeetingScheduleSchema = SchemaFactory.createForClass(
+  ClassHasMeetingSchedule,
+);
