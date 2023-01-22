@@ -9,9 +9,8 @@ import {
   Put,
   Query,
 } from '@nestjs/common';
-import e from 'express';
 import { Types } from 'mongoose';
-import { ClassHasDocumentCreateDto } from 'src/dto/classHasDocument.dto';
+import { ClassHasDocumentBodyDto } from 'src/dto/classHasDocument.dto';
 import { DocumentCreateDto, DocumentUpdateDto } from 'src/dto/document.dto';
 import { ClassHasDocumentService } from 'src/services/classHasDocument.service';
 import { DocumentService } from 'src/services/document.service';
@@ -140,7 +139,7 @@ export class DocumentController {
         description,
         startDate,
         endDate,
-        sendedAt: findData ? findData.updatedAt : null,
+        sentAt: findData ? findData.updatedAt : null,
         sendStatus,
       });
     }
@@ -157,9 +156,18 @@ export class DocumentController {
     return await this.documentService.create(body);
   }
 
-  @Post(`class/:id/${defaultPath}`)
-  async setDateDocumentInClass(@Body() body: ClassHasDocumentCreateDto) {
-    return await this.classHasDocumentService.createOrUpdate(body);
+  @Put(`class/:classId/${defaultPath}/:documentId/date`)
+  @HttpCode(200)
+  async setDateDocumentInClass(
+    @Param('classId') classId: string,
+    @Param('documentId') documentId: string,
+    @Body() body: ClassHasDocumentBodyDto,
+  ) {
+    return await this.classHasDocumentService.createOrUpdate({
+      ...body,
+      classId,
+      documentId,
+    });
   }
 
   @Put(`${defaultPath}/:id`)

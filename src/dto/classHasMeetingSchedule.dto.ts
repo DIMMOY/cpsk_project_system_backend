@@ -1,15 +1,8 @@
-import { PartialType } from '@nestjs/mapped-types';
+import { PickType } from '@nestjs/mapped-types';
 import { Transform, Type } from 'class-transformer';
-import {
-  ValidateIf,
-  IsString,
-  IsISO8601,
-  IsIn,
-  IsNotEmpty,
-} from 'class-validator';
+import { IsISO8601, IsNotEmpty } from 'class-validator';
 import { Types } from 'mongoose';
 import { toMongoObjectId } from 'src/utils/mongoDB.utils';
-
 export class ClassHasMeetingScheduleCreateDto {
   @IsNotEmpty()
   @Type(() => Types.ObjectId)
@@ -30,4 +23,7 @@ export class ClassHasMeetingScheduleCreateDto {
   endDate: Date;
 }
 
-// export class ClassUpdateDto extends PartialType(ClassHasProjectCreateDto) {}
+export class ClassHasMeetingScheduleBodyDto extends PickType(
+  ClassHasMeetingScheduleCreateDto,
+  ['startDate', 'endDate'] as const,
+) {}

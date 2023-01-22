@@ -5,6 +5,7 @@ import { ClassHasMeetingScheduleCreateDto } from 'src/dto/classHasMeetingSchedul
 import { DocumentUpdateDto } from 'src/dto/document.dto';
 import { ResponsePattern } from 'src/interfaces/responsePattern.interface';
 import { ClassHasMeetingSchedule } from 'src/schema/classHasMeetingSchedule.schema';
+import { toMongoObjectId } from 'src/utils/mongoDB.utils';
 
 @Injectable()
 export class ClassHasMeetingScheduleService {
@@ -17,25 +18,62 @@ export class ClassHasMeetingScheduleService {
     body: ClassHasMeetingScheduleCreateDto,
   ): Promise<ResponsePattern> {
     try {
-      const { classId, meetingScheduleId } = body;
-      await this.classHasMeetingScheduleModel.findOneAndUpdate(
+      const { classId, meetingScheduleId, startDate, endDate } = body;
+      await this.classHasMeetingScheduleModel.updateOne(
         {
-          classId,
-          meetingScheduleId,
+          classId: toMongoObjectId({ value: classId, key: 'classId' }),
+          meetingScheduleId: toMongoObjectId({
+            value: meetingScheduleId,
+            key: 'meetingScheduleId',
+          }),
           deletedAt: null,
         },
-        body,
+        {
+          classId: toMongoObjectId({ value: classId, key: 'classId' }),
+          meetingScheduleId: toMongoObjectId({
+            value: meetingScheduleId,
+            key: 'meetingScheduleId',
+          }),
+          startDate,
+          endDate,
+        },
         { upsert: true },
       );
       return {
-        statusCode: 201,
-        message: 'Create ClassHasMeetingSchedule Successful',
+        statusCode: 200,
+        message: 'Create Or Update ClassHasMeetingSchedule Successful',
       };
     } catch (error) {
       console.error(error);
       return {
         statusCode: 400,
-        message: 'Create ClassHasMeetingSchedule Error',
+        message: 'Create Or Update ClassHasMeetingSchedule Error',
+        error,
+      };
+    }
+  }
+
+  async findOne(filter: any): Promise<ResponsePattern> {
+    try {
+      const data = await this.classHasMeetingScheduleModel
+        .findOne(filter)
+        .populate('meetingScheduleId');
+      if (!data) {
+        return {
+          statusCode: 404,
+          message: 'ClassHasMeetingSchedule Not Found',
+        };
+      }
+      return {
+        statusCode: 200,
+        message: 'Find ClassHasMeetingSchedule Successful',
+        data,
+      };
+    } catch (error) {
+      console.log(error);
+      return {
+        statusCode: 400,
+        message: 'Find ClassHasMeetingSchedule Error',
         error,
       };
     }

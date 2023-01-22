@@ -1,6 +1,6 @@
-import { PartialType } from '@nestjs/mapped-types';
+import { PartialType, PickType } from '@nestjs/mapped-types';
 import { Transform, Type } from 'class-transformer';
-import { IsNotEmpty } from 'class-validator';
+import { IsBoolean, IsNotEmpty, IsNumber, IsString } from 'class-validator';
 import { Types } from 'mongoose';
 import { toMongoObjectId } from 'src/utils/mongoDB.utils';
 
@@ -13,7 +13,19 @@ export class ProjectSendMeetingScheduleCreateDto {
   @IsNotEmpty()
   @Type(() => Types.ObjectId)
   @Transform(toMongoObjectId)
-  documentId: string;
+  meetingScheduleId: string;
+
+  @IsNotEmpty()
+  @IsString()
+  detail: string;
 }
 
-// export class ClassUpdateDto extends PartialType(ClassHasProjectCreateDto) {}
+export class ProjectSendMeetingScheduleDeleteDto extends PickType(
+  ProjectSendMeetingScheduleCreateDto,
+  ['projectId', 'meetingScheduleId'] as const,
+) {}
+
+export class ProjectSendMeetingScheduleBodyDto extends PickType(
+  ProjectSendMeetingScheduleCreateDto,
+  ['detail'] as const,
+) {}

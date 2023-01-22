@@ -18,22 +18,30 @@ export class ClassHasDocumentService {
     body: ClassHasDocumentCreateDto,
   ): Promise<ResponsePattern> {
     try {
-      const { classId, documentId } = body;
-      await this.classHasDocumentModel.findOneAndUpdate(
+      const { classId, documentId, startDate, endDate } = body;
+      await this.classHasDocumentModel.updateOne(
         {
-          classId,
-          documentId,
+          classId: toMongoObjectId({ value: classId, key: 'classId' }),
+          documentId: toMongoObjectId({ value: documentId, key: 'documentId' }),
           deletedAt: null,
         },
-        body,
+        {
+          classId: toMongoObjectId({ value: classId, key: 'classId' }),
+          documentId: toMongoObjectId({ value: documentId, key: 'documentId' }),
+          startDate,
+          endDate,
+        },
         { upsert: true },
       );
-      return { statusCode: 201, message: 'Create ClassHasDocument Successful' };
+      return {
+        statusCode: 200,
+        message: 'Create Or Update ClassHasDocument Successful',
+      };
     } catch (error) {
       console.error(error);
       return {
         statusCode: 400,
-        message: 'Create ClassHasDocument Error',
+        message: 'Create Or Update ClassHasDocument Error',
         error,
       };
     }

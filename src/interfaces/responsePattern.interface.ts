@@ -1,6 +1,6 @@
 export interface ResponsePattern {
   statusCode: number;
   message: string;
-  data?: Array<any>;
+  data?: any;
   error?: string;
 }

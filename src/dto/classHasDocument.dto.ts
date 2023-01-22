@@ -1,4 +1,4 @@
-import { PartialType } from '@nestjs/mapped-types';
+import { PickType } from '@nestjs/mapped-types';
 import { Transform, Type } from 'class-transformer';
 import {
   ValidateIf,
@@ -30,4 +30,7 @@ export class ClassHasDocumentCreateDto {
   endDate: Date;
 }
 
-// export class ClassUpdateDto extends PartialType(ClassHasProjectCreateDto) {}
+export class ClassHasDocumentBodyDto extends PickType(
+  ClassHasDocumentCreateDto,
+  ['startDate', 'endDate'] as const,
+) {}

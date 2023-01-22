@@ -6,11 +6,18 @@ export class ProjectSendMeetingSchedule {
   @Prop({ required: true, type: Types.ObjectId, ref: 'project' })
   projectId: Types.ObjectId;
 
-  @Prop({ required: true, type: Types.ObjectId, ref: 'meeting_schedule' })
-  meetingScheduleId: Types.ObjectId;
+  @Prop({
+    required: true,
+    type: Types.ObjectId,
+    ref: 'class_has_meeting_schedule',
+  })
+  classHasMeetingScheduleId: Types.ObjectId;
 
   @Prop({ required: true })
-  status: number;
+  detail: string;
+
+  @Prop({ required: true, default: false })
+  status: boolean;
 
   @Prop()
   lastUpdatedBy: Types.ObjectId;

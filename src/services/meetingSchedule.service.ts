@@ -30,6 +30,20 @@ export class MeetingScheduleService {
     }
   }
 
+  async findById(id: string): Promise<ResponsePattern> {
+    try {
+      const data = await this.meetingScheduleModel.findById(id);
+      return {
+        statusCode: 200,
+        message: 'Find Meeting Schedule Successful',
+        data,
+      };
+    } catch (error) {
+      console.error(error);
+      return { statusCode: 400, message: 'Find Meeting Schedule Error', error };
+    }
+  }
+
   async list(sort: string | null, filter: any): Promise<ResponsePattern> {
     try {
       const typeSort = {
