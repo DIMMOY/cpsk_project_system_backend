@@ -9,8 +9,12 @@ import {
   Put,
   Query,
 } from '@nestjs/common';
+import { Patch } from '@nestjs/common/decorators';
 import { Types } from 'mongoose';
-import { ClassHasMeetingScheduleBodyDto } from 'src/dto/classHasMeetingSchedule.dto';
+import {
+  ClassHasMeetingScheduleBodyDto,
+  ClassHasMeetingScheduleStatusBodyDto,
+} from 'src/dto/classHasMeetingSchedule.dto';
 import {
   MeetingScheduleCreateDto,
   MeetingScheduleUpdateDto,
@@ -51,6 +55,7 @@ export class MeetingScheduleController {
     const classHasMeetingSchedules =
       await this.classHasMeetingScheduleService.list(sort, {
         classId: toMongoObjectId({ value: classId, key: 'classId' }),
+        status: true,
         deletedAt: null,
       });
     if (classHasMeetingSchedules.statusCode !== 200)
@@ -115,15 +120,10 @@ export class MeetingScheduleController {
       deletedAt: null,
     });
     if (mtResponse.statusCode !== 200) return mtResponse;
-    const { startDate, endDate } = mtResponse.data;
+    const { startDate, endDate, _id } = mtResponse.data;
 
     const chmResponse = await this.projectSendMeetingSchedulService.findOne({
-      classsHasMeetingScheduleId: {
-        meetingScheduleId: toMongoObjectId({
-          value: meetingScheduleId,
-          key: 'meetingScheduleId',
-        }),
-      },
+      classHasMeetingScheduleId: _id,
       projectId: toMongoObjectId({ value: projectId, key: 'projectId' }),
       deletedAt: null,
     });
@@ -251,6 +251,20 @@ export class MeetingScheduleController {
     @Body() body: ClassHasMeetingScheduleBodyDto,
   ) {
     return await this.classHasMeetingScheduleService.createOrUpdate({
+      ...body,
+      classId,
+      meetingScheduleId,
+    });
+  }
+
+  @Patch(`class/:classId/${defaultPath}/:mtId/date/status`)
+  @HttpCode(200)
+  async changeMeetingScheduleInClass(
+    @Param('classId') classId: string,
+    @Param('mtId') meetingScheduleId: string,
+    @Body() body: ClassHasMeetingScheduleStatusBodyDto,
+  ) {
+    return await this.classHasMeetingScheduleService.updateStatus({
       ...body,
       classId,
       meetingScheduleId,

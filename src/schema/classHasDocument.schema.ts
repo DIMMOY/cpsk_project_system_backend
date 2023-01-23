@@ -20,6 +20,9 @@ export class ClassHasDocument {
 
   @Prop({ default: null })
   deletedAt: Date;
+
+  @Prop({ default: true })
+  status: boolean;
 }
 
 export const ClassHasDocumentSchema =

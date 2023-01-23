@@ -20,6 +20,9 @@ export class ClassHasMeetingSchedule {
 
   @Prop({ default: null })
   deletedAt: Date;
+
+  @Prop({ default: true })
+  status: boolean;
 }
 
 export const ClassHasMeetingScheduleSchema = SchemaFactory.createForClass(

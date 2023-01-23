@@ -1,8 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { ClassHasMeetingScheduleCreateDto } from 'src/dto/classHasMeetingSchedule.dto';
-import { DocumentUpdateDto } from 'src/dto/document.dto';
+import {
+  ClassHasMeetingScheduleCreateDto,
+  ClassHasMeetingScheduleStatusDto,
+} from 'src/dto/classHasMeetingSchedule.dto';
 import { ResponsePattern } from 'src/interfaces/responsePattern.interface';
 import { ClassHasMeetingSchedule } from 'src/schema/classHasMeetingSchedule.schema';
 import { toMongoObjectId } from 'src/utils/mongoDB.utils';
@@ -36,6 +38,7 @@ export class ClassHasMeetingScheduleService {
           }),
           startDate,
           endDate,
+          status: true,
         },
         { upsert: true },
       );
@@ -110,20 +113,31 @@ export class ClassHasMeetingScheduleService {
     }
   }
 
-  async update(_id: string, body: DocumentUpdateDto): Promise<ResponsePattern> {
+  async updateStatus(
+    body: ClassHasMeetingScheduleStatusDto,
+  ): Promise<ResponsePattern> {
     try {
-      await this.classHasMeetingScheduleModel.updateOne({ _id }, body, {
-        runValidators: true,
-      });
+      const { classId, meetingScheduleId, status } = body;
+      await this.classHasMeetingScheduleModel.updateOne(
+        {
+          classId: toMongoObjectId({ value: classId, key: 'classId' }),
+          meetingScheduleId: toMongoObjectId({
+            value: meetingScheduleId,
+            key: 'meetingScheduleId',
+          }),
+          deletedAt: null,
+        },
+        { status },
+      );
       return {
         statusCode: 200,
-        message: 'Update ClassHasMeetingSchedule Successful',
+        message: 'Update Status ClassHasMeetingSchedule Successful',
       };
     } catch (error) {
       console.error(error);
       return {
         statusCode: 400,
-        message: 'Update ClassHasMeetingSchedule Error',
+        message: 'Update Status ClassHasMeetingSchedule Error',
         error,
       };
     }
