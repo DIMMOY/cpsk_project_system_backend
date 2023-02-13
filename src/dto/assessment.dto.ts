@@ -32,6 +32,9 @@ export class AssessmentCreateDto {
   @IsBoolean()
   feedBack: boolean;
 
+  @IsBoolean()
+  autoCalculate: boolean;
+
   @IsNumber()
   assessBy: number;
 

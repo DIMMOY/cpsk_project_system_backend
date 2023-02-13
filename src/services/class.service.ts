@@ -78,6 +78,30 @@ export class ClassService {
     }
   }
 
+  async findOne(filter: any): Promise<ResponsePattern> {
+    try {
+      const data = await this.classModel.findOne(filter);
+      if (!data) {
+        return {
+          statusCode: 404,
+          message: 'Class Not Found',
+        };
+      }
+      return {
+        statusCode: 200,
+        message: 'Find Class Successful',
+        data,
+      };
+    } catch (error) {
+      console.log(error);
+      return {
+        statusCode: 400,
+        message: 'Find Class Error',
+        error,
+      };
+    }
+  }
+
   async update(_id: string, body: ClassUpdateDto): Promise<ResponsePattern> {
     try {
       await this.classModel.updateOne({ _id }, body, {

@@ -1,8 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { ClassHasDocumentCreateDto } from 'src/dto/classHasDocument.dto';
-import { DocumentCreateDto, DocumentUpdateDto } from 'src/dto/document.dto';
+import {
+  ClassHasDocumentCreateDto,
+  ClassHasDocumentStatusDto,
+} from 'src/dto/classHasDocument.dto';
+import { DocumentUpdateDto } from 'src/dto/document.dto';
 import { ResponsePattern } from 'src/interfaces/responsePattern.interface';
 import { ClassHasDocument } from 'src/schema/classHasDocument.schema';
 import { toMongoObjectId } from 'src/utils/mongoDB.utils';
@@ -30,6 +33,7 @@ export class ClassHasDocumentService {
           documentId: toMongoObjectId({ value: documentId, key: 'documentId' }),
           startDate,
           endDate,
+          status: true,
         },
         { upsert: true },
       );
@@ -71,6 +75,36 @@ export class ClassHasDocumentService {
     } catch (error) {
       console.log(error);
       return { statusCode: 400, message: 'List ClassHasDocument Error', error };
+    }
+  }
+
+  async updateStatus(
+    body: ClassHasDocumentStatusDto,
+  ): Promise<ResponsePattern> {
+    try {
+      const { classId, documentId, status } = body;
+      await this.classHasDocumentModel.updateOne(
+        {
+          classId: toMongoObjectId({ value: classId, key: 'classId' }),
+          documentId: toMongoObjectId({
+            value: documentId,
+            key: 'documentId',
+          }),
+          deletedAt: null,
+        },
+        { status },
+      );
+      return {
+        statusCode: 200,
+        message: 'Update Status ClassHasDocument Successful',
+      };
+    } catch (error) {
+      console.error(error);
+      return {
+        statusCode: 400,
+        message: 'Update Status ClassHasDocument Error',
+        error,
+      };
     }
   }
 

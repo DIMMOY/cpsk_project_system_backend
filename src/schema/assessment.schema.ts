@@ -37,6 +37,9 @@ export class Assessment {
   feedBack: boolean;
 
   @Prop({ required: true })
+  autoCalculate: boolean;
+
+  @Prop({ required: true })
   assessBy: number;
 
   @Prop({ default: null })

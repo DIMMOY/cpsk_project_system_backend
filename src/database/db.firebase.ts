@@ -10,6 +10,7 @@ import {
 import { initializeApp } from 'firebase/app';
 import { getAnalytics } from 'firebase/analytics';
 import { getAuth } from 'firebase/auth';
+import * as admin from 'firebase-admin';
 
 const firebaseConfig = {
   apiKey: FB_APIKEY,
@@ -22,6 +23,7 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
+export const adminFirebase = admin.initializeApp(firebaseConfig);
 export const firebaseApp = initializeApp(firebaseConfig);
 // export const firebaseAnalytics = await getAnalytics(firebaseApp);
 

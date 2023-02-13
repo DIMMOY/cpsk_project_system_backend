@@ -6,6 +6,7 @@ import {
   IsISO8601,
   IsIn,
   IsNotEmpty,
+  IsBoolean,
 } from 'class-validator';
 import { Types } from 'mongoose';
 import { toMongoObjectId } from 'src/utils/mongoDB.utils';
@@ -33,4 +34,25 @@ export class ClassHasDocumentCreateDto {
 export class ClassHasDocumentBodyDto extends PickType(
   ClassHasDocumentCreateDto,
   ['startDate', 'endDate'] as const,
+) {}
+
+export class ClassHasDocumentStatusDto {
+  @IsNotEmpty()
+  @Type(() => Types.ObjectId)
+  @Transform(toMongoObjectId)
+  classId: string;
+
+  @IsNotEmpty()
+  @Type(() => Types.ObjectId)
+  @Transform(toMongoObjectId)
+  documentId: string;
+
+  @IsNotEmpty()
+  @IsBoolean()
+  status: boolean;
+}
+
+export class ClassHasDocumentStatusBodyDto extends PickType(
+  ClassHasDocumentStatusDto,
+  ['status'] as const,
 ) {}

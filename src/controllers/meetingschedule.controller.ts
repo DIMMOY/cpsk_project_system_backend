@@ -3,13 +3,14 @@ import {
   Controller,
   Delete,
   Get,
-  HttpCode,
   Param,
   Post,
   Put,
+  Patch,
   Query,
+  Res,
+  Req,
 } from '@nestjs/common';
-import { Patch } from '@nestjs/common/decorators';
 import { Types } from 'mongoose';
 import {
   ClassHasMeetingScheduleBodyDto,
@@ -36,22 +37,28 @@ export class MeetingScheduleController {
   ) {}
 
   @Get(defaultPath)
-  @HttpCode(200)
-  async listMeetingSchedule(@Query('sort') sort: string) {
-    return await this.meetingScheduleService.list(sort, {});
+  async listMeetingSchedule(@Query('sort') sort: string, @Res() response) {
+    const res = await this.meetingScheduleService.list(sort, {});
+    response.status(res.statusCode).send(res);
   }
 
   @Get(`class/:id/${defaultPath}`)
-  @HttpCode(200)
   async listMeetingScheduleInClass(
     @Param('id') classId: string,
     @Query('sort') sort: string,
     @Query('status') status: string,
+    @Res() response,
   ) {
+    // list all meeting schedules
     const meetingSchedules = await this.meetingScheduleService.list(sort, {
       deletedAt: null,
     });
-    if (meetingSchedules.statusCode !== 200) return meetingSchedules;
+    if (meetingSchedules.statusCode !== 200)
+      return response
+        .status(meetingSchedules.statusCode)
+        .send(meetingSchedules);
+
+    // list meeting schedule in class
     const classHasMeetingSchedules =
       await this.classHasMeetingScheduleService.list(sort, {
         classId: toMongoObjectId({ value: classId, key: 'classId' }),
@@ -59,7 +66,9 @@ export class MeetingScheduleController {
         deletedAt: null,
       });
     if (classHasMeetingSchedules.statusCode !== 200)
-      return classHasMeetingSchedules;
+      return response
+        .status(classHasMeetingSchedules.statusCode)
+        .send(classHasMeetingSchedules);
 
     // filter data
     const data = [];
@@ -94,20 +103,30 @@ export class MeetingScheduleController {
         : data;
     // ==========
 
-    return {
+    response.status(200).send({
       statusCode: meetingSchedules.statusCode,
       message: meetingSchedules.message,
       data: filterData,
-    };
+    });
   }
 
   @Get(`class/:classId/project/:projectId/${defaultPath}/:mtId/detail`)
-  @HttpCode(200)
   async GetSendMeetingScheduleDetail(
     @Param('classId') classId: string,
     @Param('mtId') meetingScheduleId: string,
     @Param('projectId') projectId: string,
+    @Req() request,
+    @Res() response,
   ) {
+    const { _id: userId } = request.user;
+    if (!userId)
+      return response
+        .status(403)
+        .send({ statusCode: 403, message: 'Permission Denied' });
+    // เช็ค project กับ userId ว่ามีสามารถเข้าถึงได้มั๊ยกรณีเป็น student กับ advisor
+    // ไว้กลับมาทำหลัง สร้าง table user_has_project
+
+    // find class has meeting schedule id
     const mtResponse = await this.classHasMeetingScheduleService.findOne({
       classId: toMongoObjectId({
         value: classId,
@@ -119,14 +138,17 @@ export class MeetingScheduleController {
       }),
       deletedAt: null,
     });
-    if (mtResponse.statusCode !== 200) return mtResponse;
-    const { startDate, endDate, _id } = mtResponse.data;
+    if (mtResponse.statusCode !== 200)
+      return response.status(mtResponse.statusCode).send(mtResponse);
 
+    const { startDate, endDate, _id } = mtResponse.data;
     const chmResponse = await this.projectSendMeetingSchedulService.findOne({
       classHasMeetingScheduleId: _id,
       projectId: toMongoObjectId({ value: projectId, key: 'projectId' }),
       deletedAt: null,
     });
+    if (chmResponse.statusCode !== 200)
+      return response.status(chmResponse.statusCode).send(chmResponse);
 
     const { data } = chmResponse;
     const sendStatus = data
@@ -138,7 +160,7 @@ export class MeetingScheduleController {
         : 2
       : 0;
 
-    return {
+    response.status(chmResponse.statusCode).send({
       statusCode: chmResponse.statusCode,
       message: chmResponse.message,
       data: {
@@ -146,34 +168,53 @@ export class MeetingScheduleController {
         ...{ sendStatus, startDate, endDate },
         meetingSchedule: mtResponse.data.meetingScheduleId?._doc,
       },
-    };
+    });
   }
 
   @Get(`class/:classId/project/:projectId/${defaultPath}`)
-  @HttpCode(200)
   async listSendMeetingScheduleInClass(
     @Param('classId') classId: string,
     @Param('projectId') projectId: string,
     @Query('sort') sort: string,
+    @Req() request,
+    @Res() response,
   ) {
+    const { _id: userId } = request.user;
+    if (!userId)
+      return response
+        .status(403)
+        .send({ statusCode: 403, message: 'Permission Denied' });
+    // เช็ค project กับ userId ว่ามีสามารถเข้าถึงได้มั๊ยกรณีเป็น student กับ advisor
+    // ไว้กลับมาทำหลัง สร้าง table user_has_project
+
+    // find class has meeting schedule
     const classHasMeetingSchedule =
       await this.classHasMeetingScheduleService.list(sort, {
         classId: toMongoObjectId({ value: classId, key: 'classId' }),
         startDate: { $lte: new Date() },
         deletedAt: null,
+        status: true,
       });
     if (classHasMeetingSchedule.statusCode !== 200)
-      return classHasMeetingSchedule;
+      return response
+        .status(classHasMeetingSchedule.statusCode)
+        .send(classHasMeetingSchedule);
 
     const classHasMeetingScheduleIds = classHasMeetingSchedule.data.map(
       (e) => new Types.ObjectId(e._id),
     );
+
+    // find project send meeting schedule
     const projectSendMeetingSchedule =
       await this.projectSendMeetingSchedulService.list(sort, {
         classHasMeetingScheduleId: { $in: classHasMeetingScheduleIds },
         projectId: toMongoObjectId({ value: projectId, key: 'projectId' }),
         deletedAt: null,
       });
+    if (projectSendMeetingSchedule.statusCode !== 200)
+      return response
+        .status(projectSendMeetingSchedule.statusCode)
+        .send(projectSendMeetingSchedule);
 
     // filter data
     const data = [];
@@ -207,85 +248,111 @@ export class MeetingScheduleController {
         sendStatus,
       });
     }
-    return {
+    response.status(200).send({
       statusCode: classHasMeetingSchedule.statusCode,
       message: classHasMeetingSchedule.message,
       data,
-    };
+    });
   }
 
   @Post(defaultPath)
-  @HttpCode(201)
-  async createMeetingSchedule(@Body() body: MeetingScheduleCreateDto) {
-    return await this.meetingScheduleService.create(body);
+  async createMeetingSchedule(
+    @Body() body: MeetingScheduleCreateDto,
+    @Res() response,
+  ) {
+    const res = await this.meetingScheduleService.create(body);
+    response.status(res.statusCode).send(res);
   }
 
   @Post(`project/:projectId/${defaultPath}/:mtId`)
-  @HttpCode(200)
   async createSendMeetingSchedule(
     @Param('projectId') projectId: string,
     @Param('mtId') meetingScheduleId: string,
     @Body() body: ProjectSendMeetingScheduleBodyDto,
+    @Req() request,
+    @Res() response,
   ) {
-    return await this.projectSendMeetingSchedulService.createOrUpdate({
+    const { _id: userId } = request.user;
+    if (!userId)
+      return response
+        .status(403)
+        .send({ statusCode: 403, message: 'Permission Denied' });
+    // เช็ค project กับ userId ว่ามีสามารถเข้าถึงได้มั๊ยกรณีเป็น student กับ advisor
+    // ไว้กลับมาทำหลัง สร้าง table user_has_project
+
+    const res = await this.projectSendMeetingSchedulService.createOrUpdate({
       ...body,
       projectId,
       meetingScheduleId,
     });
+    response.status(res.statusCode).send(res);
   }
 
   @Put(`${defaultPath}/:id`)
-  @HttpCode(200)
   async updateMeetingSchedule(
     @Param('id') id: string,
     @Body() body: MeetingScheduleUpdateDto,
+    @Res() response,
   ) {
-    return await this.meetingScheduleService.update(id, body);
+    const res = await this.meetingScheduleService.update(id, body);
+    response.status(res.statusCode).send(res);
   }
 
   @Put(`class/:classId/${defaultPath}/:mtId/date`)
-  @HttpCode(200)
   async setDateMeetingScheduleInClass(
     @Param('classId') classId: string,
     @Param('mtId') meetingScheduleId: string,
     @Body() body: ClassHasMeetingScheduleBodyDto,
+    @Res() response,
   ) {
-    return await this.classHasMeetingScheduleService.createOrUpdate({
+    const res = await this.classHasMeetingScheduleService.createOrUpdate({
       ...body,
       classId,
       meetingScheduleId,
     });
+    response.status(res.statusCode).send(res);
   }
 
   @Patch(`class/:classId/${defaultPath}/:mtId/date/status`)
-  @HttpCode(200)
   async changeMeetingScheduleInClass(
     @Param('classId') classId: string,
     @Param('mtId') meetingScheduleId: string,
     @Body() body: ClassHasMeetingScheduleStatusBodyDto,
+    @Res() response,
   ) {
-    return await this.classHasMeetingScheduleService.updateStatus({
+    const res = await this.classHasMeetingScheduleService.updateStatus({
       ...body,
       classId,
       meetingScheduleId,
     });
+    response.status(res.statusCode).send(res);
   }
 
   @Delete(`${defaultPath}/:id`)
-  @HttpCode(200)
-  async deleteDocument(@Param('id') id: string) {
-    return await this.meetingScheduleService.delete(id);
+  async deleteMeetingSchedule(@Param('id') id: string, @Res() response) {
+    const res = await this.meetingScheduleService.delete(id);
+    response.status(res.statusCode).send(res);
   }
 
   @Delete(`project/:projectId/${defaultPath}/:mtId`)
-  @HttpCode(200)
   async deleteSendMeetingSchedule(
     @Param('mtId') meetingScheduleId: string,
     @Param('projectId') projectId: string,
+    @Req() request,
+    @Res() response,
   ) {
-    return await this.projectSendMeetingSchedulService.delete({
+    const { _id: userId } = request.user;
+    if (!userId)
+      return response
+        .status(403)
+        .send({ statusCode: 403, message: 'Permission Denied' });
+    // เช็ค project กับ userId ว่ามีสามารถเข้าถึงได้มั๊ยกรณีเป็น student กับ advisor
+    // ไว้กลับมาทำหลัง สร้าง table user_has_project
+
+    const res = await this.projectSendMeetingSchedulService.delete({
       projectId,
       meetingScheduleId,
     });
+    response.status(res.statusCode).send(res);
   }
 }

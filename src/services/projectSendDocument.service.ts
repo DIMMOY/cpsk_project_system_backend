@@ -18,10 +18,10 @@ export class ProjectSendDocumentService {
     body: ProjectSendDocumentCreateDto,
   ): Promise<ResponsePattern> {
     try {
-      const { projectId: userId, documentId } = body;
+      const { projectId, documentId } = body;
       await this.projectSendDocumentModel.findOneAndUpdate(
         {
-          projectId: userId,
+          projectId,
           documentId,
           deletedAt: null,
         },

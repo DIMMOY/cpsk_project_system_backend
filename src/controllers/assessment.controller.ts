@@ -8,11 +8,13 @@ import {
   Post,
   Put,
   Query,
+  Res,
 } from '@nestjs/common';
-import { AssessmentCreateDto } from 'src/dto/assessment.dto';
-import { ClassCreateDto, ClassUpdateDto } from 'src/dto/class.dto';
+import {
+  AssessmentCreateDto,
+  AssessmentUpdateDto,
+} from 'src/dto/assessment.dto';
 import { AssessmentService } from 'src/services/assessment.service';
-import { ClassService } from 'src/services/class.service';
 import { toMongoObjectId } from 'src/utils/mongoDB.utils';
 
 const defaultPath = 'assessment';
@@ -22,24 +24,28 @@ export class AssessmentController {
   constructor(private readonly assessmentService: AssessmentService) {}
 
   @Get(defaultPath)
-  @HttpCode(200)
-  async listClass(@Query('sort') sort: string) {
-    return await this.assessmentService.list(sort);
+  async listAssessment(@Query('sort') sort: string, @Res() response) {
+    const res = await this.assessmentService.list(sort);
+    response.status(res.statusCode).send(res);
   }
 
   @Post(defaultPath)
-  @HttpCode(201)
-  async createClass(@Body() body: AssessmentCreateDto) {
-    return await this.assessmentService.create(body);
+  async createAssessment(@Body() body: AssessmentCreateDto, @Res() response) {
+    const res = await this.assessmentService.create(body);
+    response.status(res.statusCode).send(res);
   }
 
   @Put(`${defaultPath}/:id`)
-  @HttpCode(200)
-  async updateClass(@Param('id') id: string, @Body() body: ClassUpdateDto) {
-    return await this.assessmentService.update(
+  async updateAssessment(
+    @Param('id') id: string,
+    @Body() body: AssessmentUpdateDto,
+    @Res() response,
+  ) {
+    const res = await this.assessmentService.update(
       toMongoObjectId({ value: id, key: 'id' }),
       body,
     );
+    response.status(res.statusCode).send(res);
   }
 
   //   @Delete(`${defaultPath}/:id`)

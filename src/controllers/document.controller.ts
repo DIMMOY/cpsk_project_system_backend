@@ -8,9 +8,17 @@ import {
   Post,
   Put,
   Query,
+  Req,
+  Res,
 } from '@nestjs/common';
+import { Patch } from '@nestjs/common/decorators';
+import { response } from 'express';
+import { request } from 'http';
 import { Types } from 'mongoose';
-import { ClassHasDocumentBodyDto } from 'src/dto/classHasDocument.dto';
+import {
+  ClassHasDocumentBodyDto,
+  ClassHasDocumentStatusBodyDto,
+} from 'src/dto/classHasDocument.dto';
 import { DocumentCreateDto, DocumentUpdateDto } from 'src/dto/document.dto';
 import { ClassHasDocumentService } from 'src/services/classHasDocument.service';
 import { DocumentService } from 'src/services/document.service';
@@ -28,27 +36,32 @@ export class DocumentController {
   ) {}
 
   @Get(defaultPath)
-  @HttpCode(200)
-  async listDocument(@Query('sort') sort: string) {
-    return await this.documentService.list(sort, {});
+  async listDocument(@Query('sort') sort: string, @Res() response) {
+    const res = await this.documentService.list(sort, {});
+    response.status(res.statusCode).send(res);
   }
 
   @Get(`class/:id/${defaultPath}`)
-  @HttpCode(200)
   async listDocumentInClass(
     @Param('id') classId: string,
     @Query('sort') sort: string,
     @Query('status') status: string,
+    @Res() response,
   ) {
     const documents = await this.documentService.list(sort, {
       deletedAt: null,
     });
-    if (documents.statusCode !== 200) return documents;
+    if (documents.statusCode !== 200)
+      return response.status(documents.statusCode).send(documents);
     const classHasDocuments = await this.classHasDocumentService.list(sort, {
       classId: toMongoObjectId({ value: classId, key: 'classId' }),
       deletedAt: null,
+      status: true,
     });
-    if (classHasDocuments.statusCode !== 200) return classHasDocuments;
+    if (classHasDocuments.statusCode !== 200)
+      return response
+        .status(classHasDocuments.statusCode)
+        .send(classHasDocuments);
 
     // filter data
     const data = [];
@@ -82,29 +95,45 @@ export class DocumentController {
         ? data.filter((e) => e.statusInClass === false)
         : data;
     // ==========
-    return {
+    response.status(200).send({
       statusCode: documents.statusCode,
       message: documents.message,
       data: filterData,
-    };
+    });
   }
 
   @Get(`class/:classId/project/:projectId/${defaultPath}`)
-  @HttpCode(200)
   async listSendDocumentInClass(
     @Param('classId') classId: string,
     @Param('projectId') projectId: string,
     @Query('sort') sort: string,
+    @Req() request,
+    @Res() response,
   ) {
+    const { _id: userId } = request.user;
+    if (!userId)
+      return response
+        .status(403)
+        .send({ statusCode: 403, message: 'Permission Denied' });
+    // เช็ค project กับ userId ว่ามีสามารถเข้าถึงได้มั๊ยกรณีเป็น student กับ advisor
+    // ไว้กลับมาทำหลัง สร้าง table user_has_project
+
+    // find class has document
     const classHasDocuments = await this.classHasDocumentService.list(sort, {
       classId: toMongoObjectId({ value: classId, key: 'classId' }),
       deletedAt: null,
+      status: true,
     });
-    if (classHasDocuments.statusCode !== 200) return classHasDocuments;
+    if (classHasDocuments.statusCode !== 200)
+      return response
+        .status(classHasDocuments.statusCode)
+        .send(classHasDocuments);
 
     const documentIds = classHasDocuments.data.map(
       (e) => new Types.ObjectId(e.documentId._id),
     );
+
+    // find project send document
     const projectSendDocument = await this.projectSendDocumentService.list(
       sort,
       {
@@ -113,6 +142,10 @@ export class DocumentController {
         deletedAt: null,
       },
     );
+    if (projectSendDocument.statusCode !== 200)
+      return response
+        .status(projectSendDocument.statusCode)
+        .send(projectSendDocument);
 
     // filter data
     const data = [];
@@ -143,45 +176,62 @@ export class DocumentController {
         sendStatus,
       });
     }
-    return {
+    response.status(200).send({
       statusCode: classHasDocuments.statusCode,
       message: classHasDocuments.message,
       data,
-    };
+    });
   }
 
   @Post(defaultPath)
-  @HttpCode(201)
-  async createDocument(@Body() body: DocumentCreateDto) {
-    return await this.documentService.create(body);
+  async createDocument(@Body() body: DocumentCreateDto, @Res() response) {
+    const res = await this.documentService.create(body);
+    response.status(res.statusCode).send(res);
   }
 
   @Put(`class/:classId/${defaultPath}/:documentId/date`)
-  @HttpCode(200)
   async setDateDocumentInClass(
     @Param('classId') classId: string,
     @Param('documentId') documentId: string,
     @Body() body: ClassHasDocumentBodyDto,
+    @Res() response,
   ) {
-    return await this.classHasDocumentService.createOrUpdate({
+    const res = await this.classHasDocumentService.createOrUpdate({
       ...body,
       classId,
       documentId,
     });
+    response.status(res.statusCode).send(res);
   }
 
   @Put(`${defaultPath}/:id`)
-  @HttpCode(200)
   async updateDocument(
     @Param('id') id: string,
     @Body() body: DocumentUpdateDto,
+    @Res() response,
   ) {
-    return await this.documentService.update(id, body);
+    const res = await this.documentService.update(id, body);
+    response.status(res.statusCode).send(res);
+  }
+
+  @Patch(`class/:classId/${defaultPath}/:documentId/date/status`)
+  async changeMeetingScheduleInClass(
+    @Param('classId') classId: string,
+    @Param('documentId') documentId: string,
+    @Body() body: ClassHasDocumentStatusBodyDto,
+    @Res() response,
+  ) {
+    const res = await this.classHasDocumentService.updateStatus({
+      ...body,
+      classId,
+      documentId,
+    });
+    response.status(res.statusCode).send(res);
   }
 
   @Delete(`${defaultPath}/:id`)
-  @HttpCode(200)
-  async deleteDocument(@Param('id') id: string) {
-    return await this.documentService.delete(id);
+  async deleteDocument(@Param('id') id: string, @Res() response) {
+    const res = await this.documentService.delete(id);
+    response.status(res.statusCode).send(res);
   }
 }

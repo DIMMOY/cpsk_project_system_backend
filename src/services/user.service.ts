@@ -15,14 +15,15 @@ export class UserService {
     private userHasRoleModel: Model<UserHasRole>,
   ) {}
 
-  async createOrUpdate(
-    createOrUpdateUserDto: CreateOrUpdateUserDto,
-  ): Promise<ResponsePattern> {
+  async createOrUpdate(body: {
+    email: string;
+    lastLoginAt: Date;
+  }): Promise<ResponsePattern> {
     try {
-      const { email } = createOrUpdateUserDto;
+      const { email } = body;
       const findAndUpdateUser = await this.userModel.findOneAndUpdate(
         { email, deletedAt: null },
-        createOrUpdateUserDto,
+        body,
         { upsert: true, new: true },
       );
 
@@ -58,13 +59,37 @@ export class UserService {
       return {
         statusCode: 200,
         message: 'Update user successful',
-        data: roles,
+        data: { userId: _id, role: roles },
       };
     } catch (error) {
       console.log(error);
       return {
         statusCode: 400,
         message: 'Update user error',
+        error,
+      };
+    }
+  }
+
+  async findOne(filter: any): Promise<ResponsePattern> {
+    try {
+      const data = await this.userModel.findOne(filter);
+      if (!data) {
+        return {
+          statusCode: 404,
+          message: 'User Not Found',
+        };
+      }
+      return {
+        statusCode: 200,
+        message: 'Find User Successful',
+        data,
+      };
+    } catch (error) {
+      console.log(error);
+      return {
+        statusCode: 400,
+        message: 'Find User Error',
         error,
       };
     }

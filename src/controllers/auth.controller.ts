@@ -7,15 +7,15 @@ import { ProjectService } from 'src/services/project.service';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @Post('google/login')
-  @HttpCode(200)
-  async login() {
-    return await this.authService.signInWithGoogle();
-  }
+  // @Post('google/login')
+  // @HttpCode(200)
+  // async login() {
+  //   return await this.authService.signInWithGoogle();
+  // }
 
-  @Post('google/logout')
-  @HttpCode(200)
-  async logout() {
-    return await this.authService.signOutWihtGoogle();
-  }
+  // @Post('google/logout')
+  // @HttpCode(200)
+  // async logout() {
+  //   return await this.authService.signOutWihtGoogle();
+  // }
 }

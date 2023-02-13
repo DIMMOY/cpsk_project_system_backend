@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { DocumentUpdateDto } from 'src/dto/document.dto';
 import {
   ProjectSendMeetingScheduleCreateDto,
@@ -94,7 +94,8 @@ export class ProjectSendMeetingScheduleService {
     try {
       const data = await this.projectSendMeetingScheduleModel
         .findOne(filter)
-        .populate('classHasMeetingScheduleId');
+        .populate('classHasMeetingScheduleId')
+        .populate('projectId');
       return {
         statusCode: 200,
         message: 'Find ProjectSendMeetingSchedule Successful',

@@ -8,9 +8,13 @@ import {
   Post,
   Put,
   Query,
+  Req,
+  Res,
 } from '@nestjs/common';
+import { response } from 'express';
 import { ClassCreateDto, ClassUpdateDto } from 'src/dto/class.dto';
 import { ClassService } from 'src/services/class.service';
+import { toMongoObjectId } from 'src/utils/mongoDB.utils';
 
 const defaultPath = 'class';
 
@@ -19,30 +23,44 @@ export class ClassController {
   constructor(private readonly classService: ClassService) {}
 
   @Get(defaultPath)
-  @HttpCode(200)
   async listClass(
     @Query('sort') sort: string,
     @Query('select') select: string,
     @Query('major') major: string,
+    @Res() response,
   ) {
-    return await this.classService.list(sort, select, major);
+    const res = await this.classService.list(sort, select, major);
+    response.status(res.statusCode).send(res);
+  }
+
+  @Get(`${defaultPath}/:id`)
+  async getClass(@Param('id') classId: string, @Res() response) {
+    const res = await this.classService.findOne({
+      _id: toMongoObjectId({ value: classId, key: 'classId' }),
+    });
+    response.status(res.statusCode).send(res);
   }
 
   @Post(defaultPath)
-  @HttpCode(201)
-  async createClass(@Body() body: ClassCreateDto) {
-    return await this.classService.create(body);
+  async createClass(@Body() body: ClassCreateDto, @Res() response) {
+    const res = await this.classService.create(body);
+    response.status(res.statusCode).send(res);
   }
 
   @Put(`${defaultPath}/:id`)
-  @HttpCode(200)
-  async updateClass(@Param('id') id: string, @Body() body: ClassUpdateDto) {
-    return await this.classService.update(id, body);
+  async updateClass(
+    @Param('id') id: string,
+    @Body() body: ClassUpdateDto,
+    @Res() response,
+  ) {
+    const res = await this.classService.update(id, body);
+    response.status(res.statusCode).send(res);
   }
 
   @Delete(`${defaultPath}/:id`)
   @HttpCode(200)
-  async deleteClass(@Param('id') id: string) {
-    return await this.classService.delete(id);
+  async deleteClass(@Param('id') id: string, @Res() response) {
+    const res = await this.classService.delete(id);
+    response.status(res.statusCode).send(res);
   }
 }
