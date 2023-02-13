@@ -16,7 +16,12 @@ export class UserController {
 
   @Get('/class')
   async findUserInClass(@Req() request, @Res() response) {
-    const { _id: userId } = request.user;
+    const { _id: userId, email } = request.user;
+    if (!userId)
+      return response
+        .status(403)
+        .send({ statusCode: 403, message: 'Permission Denied' });
+
     const res = await this.userJoinClassService.find({
       userId,
       deletedAt: null,
@@ -25,10 +30,7 @@ export class UserController {
       return response
         .status(400)
         .send({ statusCode: 400, message: 'UserJoinClass Database Error' });
-    if (res.data[0].userId.email !== request.user.email)
-      return response
-        .status(401)
-        .send({ statusCode: 401, message: 'Unauthorized' });
+
     response.status(res.statusCode).send({
       statusCode: res.statusCode,
       message: res.message,
