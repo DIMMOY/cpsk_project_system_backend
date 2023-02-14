@@ -39,7 +39,7 @@ export class IsAdminOrAdvisorMiddleware implements NestMiddleware {
         return response.status(userData.statusCode).send(userData);
 
       // Is Admin Or Advisor
-      const userHasRoleData = await this.userHasRoleService.find({
+      const userHasRoleData = await this.userHasRoleService.list({
         userId: userData.data._id,
         role: { $in: [1, 2] },
         deletedAt: null,
