@@ -8,13 +8,15 @@ export class AuthMiddleware implements NestMiddleware {
   constructor(private readonly userService: UserService) {}
 
   async use(@Req() request, @Res() response, next: NextFunction) {
-    const token = request.headers.authorization;
+    let token = request.headers.authorization;
 
     if (!token) {
       return response
         .status(401)
         .send({ statusCode: 401, message: 'Unauthorized' });
     }
+
+    token = token.replace('Bearer ', '');
 
     try {
       const decoded = await adminFirebase.auth().verifyIdToken(token);
