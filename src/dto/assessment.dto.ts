@@ -1,6 +1,12 @@
 import { PartialType } from '@nestjs/mapped-types';
 import { Type } from 'class-transformer';
-import { IsString, IsBoolean, IsNumber, IsArray } from 'class-validator';
+import {
+  IsString,
+  IsBoolean,
+  IsNumber,
+  IsArray,
+  ValidateNested,
+} from 'class-validator';
 
 export class FormCreateDto {
   @IsString()
@@ -39,6 +45,7 @@ export class AssessmentCreateDto {
   assessBy: number;
 
   @IsArray()
+  @ValidateNested({ each: true })
   @Type(() => FormCreateDto)
   form: Array<FormCreateDto>;
 }
