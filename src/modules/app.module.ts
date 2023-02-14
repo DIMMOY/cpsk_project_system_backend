@@ -1,8 +1,6 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { MG_URI } from 'src/config';
-import { AppController } from '../controllers/app.controller';
-import { AppService } from '../services/app.service';
 import { AuthModule } from './auth.module';
 import { ClassModule } from './class.module';
 import { DocumentModule } from './document.module';
@@ -21,7 +19,5 @@ import { AssessmentModule } from './assessment.module';
     MeetingScheduleModule,
     AssessmentModule,
   ],
-  controllers: [AppController],
-  providers: [AppService],
 })
 export class AppModule {}
