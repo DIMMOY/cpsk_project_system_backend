@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { DocumentCreateDto, DocumentUpdateDto } from 'src/dto/document.dto';
 import { ResponsePattern } from 'src/interfaces/responsePattern.interface';
 import { Document } from 'src/schema/document.schema';
@@ -44,7 +44,10 @@ export class DocumentService {
     }
   }
 
-  async update(_id: string, body: DocumentUpdateDto): Promise<ResponsePattern> {
+  async update(
+    _id: Types.ObjectId,
+    body: DocumentUpdateDto,
+  ): Promise<ResponsePattern> {
     try {
       await this.documentModel.updateOne({ _id }, body, {
         runValidators: true,

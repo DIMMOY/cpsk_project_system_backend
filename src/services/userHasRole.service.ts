@@ -36,7 +36,7 @@ export class UserHasRoleService {
     }
   }
 
-  async find(filter: any): Promise<ResponsePattern> {
+  async list(filter: any): Promise<ResponsePattern> {
     try {
       const data = await this.userHasRoleModel.find(filter);
       if (!data) {

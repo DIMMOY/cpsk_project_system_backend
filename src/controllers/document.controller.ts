@@ -41,9 +41,9 @@ export class DocumentController {
     response.status(res.statusCode).send(res);
   }
 
-  @Get(`class/:id/${defaultPath}`)
+  @Get(`class/:classId/${defaultPath}`)
   async listDocumentInClass(
-    @Param('id') classId: string,
+    @Param('classId') classId: string,
     @Query('sort') sort: string,
     @Query('status') status: string,
     @Res() response,
@@ -116,7 +116,7 @@ export class DocumentController {
         .status(403)
         .send({ statusCode: 403, message: 'Permission Denied' });
     // เช็ค project กับ userId ว่ามีสามารถเข้าถึงได้มั๊ยกรณีเป็น student กับ advisor
-    // ไว้กลับมาทำหลัง สร้าง table user_has_project
+    // ไว้กลับมาทำหลัง สร้าง table project_has_user
 
     // find class has document
     const classHasDocuments = await this.classHasDocumentService.list(sort, {
@@ -204,13 +204,16 @@ export class DocumentController {
     response.status(res.statusCode).send(res);
   }
 
-  @Put(`${defaultPath}/:id`)
+  @Put(`${defaultPath}/:documentId`)
   async updateDocument(
-    @Param('id') id: string,
+    @Param('documentId') documentId: string,
     @Body() body: DocumentUpdateDto,
     @Res() response,
   ) {
-    const res = await this.documentService.update(id, body);
+    const res = await this.documentService.update(
+      toMongoObjectId({ value: documentId, key: 'documentId' }),
+      body,
+    );
     response.status(res.statusCode).send(res);
   }
 

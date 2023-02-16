@@ -39,7 +39,7 @@ export class IsAdvisorMiddleware implements NestMiddleware {
         return response.status(userData.statusCode).send(userData);
 
       // IsAdvisor
-      const userHasRoleData = await this.userHasRoleService.find({
+      const userHasRoleData = await this.userHasRoleService.list({
         userId: userData.data._id,
         role: 1,
         deletedAt: null,

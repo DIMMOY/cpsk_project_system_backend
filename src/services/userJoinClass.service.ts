@@ -42,7 +42,7 @@ export class UserJoinClassService {
       if (!data) {
         return {
           statusCode: 404,
-          message: 'User Not Found',
+          message: 'User In Class Not Found',
         };
       }
       return {
@@ -60,7 +60,7 @@ export class UserJoinClassService {
     }
   }
 
-  async find(filter: any): Promise<ResponsePattern> {
+  async list(filter: any): Promise<ResponsePattern> {
     try {
       const data = await this.userJoinClassModel
         .find(filter)
@@ -69,7 +69,7 @@ export class UserJoinClassService {
       if (!data) {
         return {
           statusCode: 404,
-          message: 'User Not Found',
+          message: 'User In Class Not Found',
         };
       }
       return {

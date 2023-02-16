@@ -42,9 +42,9 @@ export class MeetingScheduleController {
     response.status(res.statusCode).send(res);
   }
 
-  @Get(`class/:id/${defaultPath}`)
+  @Get(`class/:classId/${defaultPath}`)
   async listMeetingScheduleInClass(
-    @Param('id') classId: string,
+    @Param('classId') classId: string,
     @Query('sort') sort: string,
     @Query('status') status: string,
     @Res() response,
@@ -124,7 +124,7 @@ export class MeetingScheduleController {
         .status(403)
         .send({ statusCode: 403, message: 'Permission Denied' });
     // เช็ค project กับ userId ว่ามีสามารถเข้าถึงได้มั๊ยกรณีเป็น student กับ advisor
-    // ไว้กลับมาทำหลัง สร้าง table user_has_project
+    // ไว้กลับมาทำหลัง สร้าง table project_has_user
 
     // find class has meeting schedule id
     const mtResponse = await this.classHasMeetingScheduleService.findOne({
@@ -185,7 +185,7 @@ export class MeetingScheduleController {
         .status(403)
         .send({ statusCode: 403, message: 'Permission Denied' });
     // เช็ค project กับ userId ว่ามีสามารถเข้าถึงได้มั๊ยกรณีเป็น student กับ advisor
-    // ไว้กลับมาทำหลัง สร้าง table user_has_project
+    // ไว้กลับมาทำหลัง สร้าง table project_has_user
 
     // find class has meeting schedule
     const classHasMeetingSchedule =
@@ -278,7 +278,7 @@ export class MeetingScheduleController {
         .status(403)
         .send({ statusCode: 403, message: 'Permission Denied' });
     // เช็ค project กับ userId ว่ามีสามารถเข้าถึงได้มั๊ยกรณีเป็น student กับ advisor
-    // ไว้กลับมาทำหลัง สร้าง table user_has_project
+    // ไว้กลับมาทำหลัง สร้าง table project_has_user
 
     const res = await this.projectSendMeetingSchedulService.createOrUpdate({
       ...body,
@@ -288,13 +288,16 @@ export class MeetingScheduleController {
     response.status(res.statusCode).send(res);
   }
 
-  @Put(`${defaultPath}/:id`)
+  @Put(`${defaultPath}/:mtId`)
   async updateMeetingSchedule(
-    @Param('id') id: string,
+    @Param('mtId') mtId: string,
     @Body() body: MeetingScheduleUpdateDto,
     @Res() response,
   ) {
-    const res = await this.meetingScheduleService.update(id, body);
+    const res = await this.meetingScheduleService.update(
+      toMongoObjectId({ value: mtId, key: 'meetingScheduleId' }),
+      body,
+    );
     response.status(res.statusCode).send(res);
   }
 
@@ -347,7 +350,7 @@ export class MeetingScheduleController {
         .status(403)
         .send({ statusCode: 403, message: 'Permission Denied' });
     // เช็ค project กับ userId ว่ามีสามารถเข้าถึงได้มั๊ยกรณีเป็น student กับ advisor
-    // ไว้กลับมาทำหลัง สร้าง table user_has_project
+    // ไว้กลับมาทำหลัง สร้าง table project_has_user
 
     const res = await this.projectSendMeetingSchedulService.delete({
       projectId,

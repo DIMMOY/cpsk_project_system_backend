@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import {
   MeetingScheduleCreateDto,
   MeetingScheduleUpdateDto,
@@ -70,7 +70,7 @@ export class MeetingScheduleService {
   }
 
   async update(
-    _id: string,
+    _id: Types.ObjectId,
     body: MeetingScheduleUpdateDto,
   ): Promise<ResponsePattern> {
     try {

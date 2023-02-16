@@ -49,7 +49,7 @@ export class DocumentModule implements NestModule {
     consumer.apply(IsAdminMiddleware).forRoutes(
       { path: 'document', method: RequestMethod.POST },
       { path: 'document', method: RequestMethod.GET },
-      { path: 'class/:id/document', method: RequestMethod.GET },
+      { path: 'class/:classId/document', method: RequestMethod.GET },
       { path: 'document/:id', method: RequestMethod.PUT },
       {
         path: 'class/:classId/document/:documentId/date',
@@ -59,7 +59,7 @@ export class DocumentModule implements NestModule {
         path: 'class/:classId/document/:documentId/date/status',
         method: RequestMethod.PATCH,
       },
-      { path: 'document/:id', method: RequestMethod.DELETE },
+      { path: 'document/:documentId', method: RequestMethod.DELETE },
     );
     consumer.apply(IsStudentMiddleware).forRoutes(
       {

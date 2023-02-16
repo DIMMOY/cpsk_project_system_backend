@@ -61,8 +61,8 @@ export class MeetingScheduleModule implements NestModule {
     consumer.apply(IsAdminMiddleware).forRoutes(
       { path: 'meeting-schedule', method: RequestMethod.POST },
       { path: 'meeting-schedule', method: RequestMethod.GET },
-      { path: 'class/:id/meeting-schedule', method: RequestMethod.GET },
-      { path: 'meeting-schedule/:id', method: RequestMethod.PUT },
+      { path: 'class/:classId/meeting-schedule', method: RequestMethod.GET },
+      { path: 'meeting-schedule/:mtId', method: RequestMethod.PUT },
       {
         path: 'class/:classId/meeting-schedule/:mtId/date',
         method: RequestMethod.PUT,

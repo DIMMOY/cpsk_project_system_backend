@@ -22,7 +22,7 @@ export class UserController {
         .status(403)
         .send({ statusCode: 403, message: 'Permission Denied' });
 
-    const res = await this.userJoinClassService.find({
+    const res = await this.userJoinClassService.list({
       userId,
       deletedAt: null,
     });
@@ -57,7 +57,7 @@ export class UserController {
     const classId = classData.data._id;
 
     // check user not in other class
-    const userJoinClassData = await this.userJoinClassService.find({
+    const userJoinClassData = await this.userJoinClassService.list({
       userId,
       deletedAt: null,
     });

@@ -1,5 +1,6 @@
 import { Injectable, NestMiddleware, Req, Res } from '@nestjs/common';
 import { NextFunction } from 'express';
+import { LOG_DIR } from 'src/config';
 import { adminFirebase } from 'src/database/db.firebase';
 import { UserService } from 'src/services/user.service';
 import { UserHasRoleService } from 'src/services/userHasRole.service';
@@ -39,7 +40,7 @@ export class IsStudentMiddleware implements NestMiddleware {
         return response.status(userData.statusCode).send(userData);
 
       // IsStudent
-      const userHasRoleData = await this.userHasRoleService.find({
+      const userHasRoleData = await this.userHasRoleService.list({
         userId: userData.data._id,
         role: 0,
         deletedAt: null,

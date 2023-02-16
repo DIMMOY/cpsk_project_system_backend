@@ -11,6 +11,11 @@ yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
 
+logs/*
+/src/logs/*
+/src/logs/debug
+/src/logs/error
+
 # OS
 .DS_Store
 
@@ -38,3 +43,4 @@ lerna-debug.log*
 .env
 .env.mongo.database
 .env.firebase.database
+.env.development.local

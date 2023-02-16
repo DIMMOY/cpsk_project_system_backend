@@ -1,24 +1,33 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { ProjectCreateDto } from 'src/dto/project.dto';
 import { Project } from 'src/schema/project.schema';
 import { ResponsePattern } from 'src/interfaces/responsePattern.interface';
-import { UserHasProject } from 'src/schema/userHasProject.schema';
+import { ProjectHasUser } from 'src/schema/projectHasUser.schema';
 
 @Injectable()
 export class ProjectService {
   constructor(
     @InjectModel('project')
     private projectModel: Model<Project>,
-    @InjectModel('user_has_project')
-    private userHasProjectModel: Model<UserHasProject>,
+    @InjectModel('project_has_user')
+    private projectHasUserModel: Model<ProjectHasUser>,
   ) {}
 
-  async create(projectCreateDto: ProjectCreateDto): Promise<ResponsePattern> {
+  async create(projectCreateDto: {
+    userId: Types.ObjectId;
+    classId: Types.ObjectId;
+    nameTH: string;
+    nameEN: string;
+    description: string;
+    partners: Array<Types.ObjectId>;
+    advisors: Array<Types.ObjectId>;
+  }): Promise<ResponsePattern> {
+    let projectId = null;
     try {
       const {
-        userId, //ชั่วคราว
+        userId,
         classId,
         nameTH,
         nameEN,
@@ -36,20 +45,28 @@ export class ProjectService {
         null,
         { new: true },
       );
-      const projectId = (await createProject.save())._id;
-      console.log(projectId);
-      const ownerRole = [{ projectId, userId, role: 0 }];
+      projectId = (await createProject.save())._id;
+      const ownerRole = [
+        { classId, projectId, userId, role: 0, isAccept: true },
+      ];
+
+      // partners
       const partnersRole = partners.map((userId) => ({
+        classId,
         projectId,
         userId,
         role: 1,
       }));
+
+      // advisors
       const advisorsRole = advisors.map((userId) => ({
+        classId,
         projectId,
         userId,
         role: 2,
       }));
-      await this.userHasProjectModel.insertMany([
+
+      await this.projectHasUserModel.insertMany([
         ...ownerRole,
         ...partnersRole,
         ...advisorsRole,
@@ -57,6 +74,12 @@ export class ProjectService {
       return { statusCode: 201, message: 'Create Project Successful' };
     } catch (error) {
       console.log(error);
+      if (projectId) {
+        this.projectModel.updateOne(
+          { _id: projectId },
+          { deletedAt: new Date() },
+        );
+      }
       return { statusCode: 400, message: 'Create Project Error', error };
     }
   }

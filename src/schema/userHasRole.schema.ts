@@ -6,6 +6,9 @@ export class UserHasRole {
   @Prop({ required: true, type: Types.ObjectId, ref: 'user' })
   userId: Types.ObjectId;
 
+  // 0 = student
+  // 1 = advisor
+  // 2 = admin
   @Prop({ required: true })
   role: number;
 
