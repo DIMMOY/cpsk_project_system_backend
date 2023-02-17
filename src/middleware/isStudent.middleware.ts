@@ -25,11 +25,6 @@ export class IsStudentMiddleware implements NestMiddleware {
 
     try {
       const decoded = await adminFirebase.auth().verifyIdToken(token);
-      const currentTime = new Date().getTime() / 1000;
-      if (currentTime > decoded.exp)
-        return response
-          .status(401)
-          .send({ statusCode: 401, message: 'Unauthorized' });
 
       const { email } = decoded;
       const userData = await this.userService.findOne({
@@ -53,6 +48,7 @@ export class IsStudentMiddleware implements NestMiddleware {
           .send({ statusCode: 403, message: 'Permission Denied' });
 
       request.user = userData.data;
+      request.role = [0];
 
       next();
     } catch (error) {

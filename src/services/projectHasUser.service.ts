@@ -22,9 +22,11 @@ export class ProjectHasUserService {
     }
   }
 
-  async list(filter: any): Promise<ResponsePattern> {
+  async list(filter: any, select?: any): Promise<ResponsePattern> {
     try {
-      const data = await this.projectHasUserModel.find(filter);
+      const data = await this.projectHasUserModel
+        .find(filter)
+        .select(select ? select : {});
       return {
         statusCode: 200,
         message: 'List ProjectHasUser Successful',
@@ -38,7 +40,17 @@ export class ProjectHasUserService {
 
   async findOne(filter: any): Promise<ResponsePattern> {
     try {
-      const data = await this.projectHasUserModel.findOne(filter);
+      const data = await this.projectHasUserModel
+        .findOne(filter)
+        .populate('classId')
+        .populate('projectId')
+        .populate('userId');
+      if (!data) {
+        return {
+          statusCode: 404,
+          message: 'ProjectHasUser Not Found',
+        };
+      }
       return {
         statusCode: 200,
         message: 'Find ProjectHasUser Successful',

@@ -26,11 +26,6 @@ export class AuthMiddleware implements NestMiddleware {
         email,
         deletedAt: null,
       });
-      const currentTime = new Date().getTime() / 1000;
-      if (currentTime > decoded.exp)
-        return response
-          .status(401)
-          .send({ statusCode: 401, message: 'Unauthorized' });
 
       request.user = userData.data ? userData.data : decoded;
 

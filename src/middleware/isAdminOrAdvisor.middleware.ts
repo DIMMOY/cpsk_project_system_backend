@@ -24,11 +24,6 @@ export class IsAdminOrAdvisorMiddleware implements NestMiddleware {
 
     try {
       const decoded = await adminFirebase.auth().verifyIdToken(token);
-      const currentTime = new Date().getTime() / 1000;
-      if (currentTime > decoded.exp)
-        return response
-          .status(401)
-          .send({ statusCode: 401, message: 'Unauthorized' });
 
       const { email } = decoded;
       const userData = await this.userService.findOne({
@@ -52,6 +47,7 @@ export class IsAdminOrAdvisorMiddleware implements NestMiddleware {
           .send({ statusCode: 403, message: 'Permission Denied' });
 
       request.user = userData.data;
+      request.role = userHasRoleData.data.map((e) => e.role);
 
       next();
     } catch (error) {

@@ -1,7 +1,6 @@
 import {
   Body,
   Controller,
-  HttpCode,
   Post,
   Get,
   Param,
@@ -99,6 +98,98 @@ export class ProjectController {
       classId: toMongoObjectId({ value: classId, key: 'classId' }),
     });
     response.status(res.statusCode).send(res);
+  }
+
+  @Get(`class/:classId/${defaultPath}/:projectId`)
+  async getProjectInClass(
+    @Param('classId') classId: string,
+    @Param('projectId') projectId: string,
+    @Req() request,
+    @Res() response,
+  ) {
+    const { _id: userId } = request.user;
+    const { role } = request;
+
+    if (!userId)
+      return response
+        .status(403)
+        .send({ statusCode: 403, message: 'Permission Denied' });
+
+    // is not admin (for advisor)
+    if (!role.find((e) => e === 2)) {
+      const findPermission = await this.projectHasUserService.findOne({
+        classId: toMongoObjectId({ value: classId, key: 'classId' }),
+        userId: toMongoObjectId({ value: userId, key: 'userId' }),
+        projectId: toMongoObjectId({ value: projectId, key: 'projectId' }),
+        deletedAt: null,
+      });
+      if (!findPermission.data) {
+        return response
+          .status(403)
+          .send({ statusCode: 403, message: 'Permission Denied' });
+      }
+      response.status(200).send({
+        statusCode: 200,
+        message: 'Find Project Successful',
+        data: findPermission.data.projectId,
+      });
+    } else {
+      const project = await this.projectService.findOne({
+        classId: toMongoObjectId({ value: classId, key: 'classId' }),
+        projectId: toMongoObjectId({ value: projectId, key: 'projectId' }),
+        deletedAt: null,
+      });
+      response.status(project.statusCode).send(project);
+    }
+  }
+
+  @Get(`class/:classId/student/${defaultPath}`)
+  async getProjectInClassForStudent(
+    @Param('classId') classId: string,
+    @Req() request,
+    @Res() response,
+  ) {
+    const { _id: userId } = request.user;
+    if (!userId)
+      return response
+        .status(403)
+        .send({ statusCode: 403, message: 'Permission Denied' });
+
+    const res = await this.projectHasUserService.findOne({
+      userId,
+      classId: toMongoObjectId({ value: classId, key: 'classId' }),
+      deletedAt: null,
+      role: { $in: [0, 1] },
+    });
+    response.status(res.statusCode).send(res);
+  }
+
+  @Get(`class/:classId/${defaultPath}/:projectId/role`)
+  async checkRoleInProject(
+    @Param('classId') classId: string,
+    @Param('projectId') projectId: string,
+    @Req() request,
+    @Res() response,
+  ) {
+    const { _id: userId } = request.user;
+    if (!userId)
+      return response
+        .status(403)
+        .send({ statusCode: 403, message: 'Permission Denied' });
+
+    const res = await this.projectHasUserService.list(
+      {
+        userId,
+        classId: toMongoObjectId({ value: classId, key: 'classId' }),
+        projectId: toMongoObjectId({ value: projectId, key: 'classId' }),
+        deletedAt: null,
+      },
+      { role: 1, _id: 0 },
+    );
+    const { statusCode, message } = res;
+    response
+      .status(statusCode)
+      .send({ statusCode, message, data: res.data.map((e) => e.role) });
   }
 
   @Put(`class/:classId/${defaultPath}/:projectId`)

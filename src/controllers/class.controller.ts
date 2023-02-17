@@ -33,8 +33,8 @@ export class ClassController {
     response.status(res.statusCode).send(res);
   }
 
-  @Get(`${defaultPath}/:id`)
-  async getClass(@Param('id') classId: string, @Res() response) {
+  @Get(`${defaultPath}/:classId`)
+  async getClass(@Param('classId') classId: string, @Res() response) {
     const res = await this.classService.findOne({
       _id: toMongoObjectId({ value: classId, key: 'classId' }),
     });
@@ -47,20 +47,20 @@ export class ClassController {
     response.status(res.statusCode).send(res);
   }
 
-  @Put(`${defaultPath}/:id`)
+  @Put(`${defaultPath}/:classId`)
   async updateClass(
-    @Param('id') id: string,
+    @Param('classId') classId: string,
     @Body() body: ClassUpdateDto,
     @Res() response,
   ) {
-    const res = await this.classService.update(id, body);
+    const res = await this.classService.update(classId, body);
     response.status(res.statusCode).send(res);
   }
 
-  @Delete(`${defaultPath}/:id`)
+  @Delete(`${defaultPath}/:classId`)
   @HttpCode(200)
-  async deleteClass(@Param('id') id: string, @Res() response) {
-    const res = await this.classService.delete(id);
+  async deleteClass(@Param('classId') classId: string, @Res() response) {
+    const res = await this.classService.delete(classId);
     response.status(res.statusCode).send(res);
   }
 }

@@ -20,6 +20,8 @@ import { ClassService } from 'src/services/class.service';
 import { ProjectHasUserService } from 'src/services/projectHasUser.service';
 import { UserJoinClassSchema } from 'src/schema/userJoinClass.schema';
 import { UserJoinClassService } from 'src/services/userJoinClass.service';
+import { AuthMiddleware } from 'src/middleware/auth.middleware';
+import { IsAdminOrAdvisorMiddleware } from 'src/middleware/isAdminOrAdvisor.middleware';
 
 @Module({
   imports: [
@@ -45,11 +47,22 @@ import { UserJoinClassService } from 'src/services/userJoinClass.service';
 })
 export class ProjectModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer
-      .apply(IsAdminMiddleware)
-      .forRoutes({ path: 'class/:id/project', method: RequestMethod.GET });
+    consumer.apply(IsAdminOrAdvisorMiddleware).forRoutes(
+      { path: 'class/:classId/project', method: RequestMethod.GET },
+      {
+        path: 'class/:classId/project/:projectId',
+        method: RequestMethod.GET,
+      },
+    );
     consumer
       .apply(IsStudentMiddleware)
-      .forRoutes({ path: 'class/:id/project', method: RequestMethod.POST });
+      .forRoutes(
+        { path: 'class/:classId/project', method: RequestMethod.POST },
+        { path: 'class/:classId/student/project', method: RequestMethod.GET },
+      );
+    consumer.apply(AuthMiddleware).forRoutes({
+      path: 'class/:classId/project/:projectId/role',
+      method: RequestMethod.GET,
+    });
   }
 }

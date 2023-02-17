@@ -37,11 +37,11 @@ export class ClassModule implements NestModule {
       .apply(IsAdminMiddleware)
       .forRoutes(
         { path: 'class', method: RequestMethod.POST },
-        { path: 'class/:id', method: RequestMethod.PUT },
-        { path: 'class/:id', method: RequestMethod.DELETE },
+        { path: 'class/:classId', method: RequestMethod.PUT },
+        { path: 'class/:classId', method: RequestMethod.DELETE },
       );
     consumer.apply(AuthMiddleware).forRoutes({
-      path: 'class/:id',
+      path: 'class/:classId',
       method: RequestMethod.GET,
     });
   }

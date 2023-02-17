@@ -104,4 +104,24 @@ export class ProjectService {
       return { statusCode: 400, message: 'List Project Error', error };
     }
   }
+
+  async findOne(filter: any): Promise<ResponsePattern> {
+    try {
+      const data = await this.projectModel.findOne(filter);
+      if (!data) {
+        return {
+          statusCode: 404,
+          message: 'Project Not Found',
+        };
+      }
+      return {
+        statusCode: 200,
+        message: 'Find Project Successful',
+        data,
+      };
+    } catch (error) {
+      console.log(error);
+      return { statusCode: 400, message: 'Find Project Error', error };
+    }
+  }
 }

@@ -111,7 +111,7 @@ export class MeetingScheduleController {
   }
 
   @Get(`class/:classId/project/:projectId/${defaultPath}/:mtId/detail`)
-  async GetSendMeetingScheduleDetail(
+  async getSendMeetingScheduleDetail(
     @Param('classId') classId: string,
     @Param('mtId') meetingScheduleId: string,
     @Param('projectId') projectId: string,
