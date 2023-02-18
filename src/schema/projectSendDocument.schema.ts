@@ -6,8 +6,11 @@ export class ProjectSendDocument {
   @Prop({ required: true, type: Types.ObjectId, ref: 'project' })
   projectId: Types.ObjectId;
 
-  @Prop({ required: true, type: Types.ObjectId, ref: 'document' })
-  documentId: Types.ObjectId;
+  @Prop({ required: true, type: Types.ObjectId, ref: 'class_has_document' })
+  classHasDocumentId: Types.ObjectId;
+
+  @Prop({ required: true })
+  pathDocument: Array<string>;
 
   @Prop({ required: true })
   status: number;

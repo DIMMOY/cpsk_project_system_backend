@@ -188,19 +188,19 @@ export class MeetingScheduleController {
     // ไว้กลับมาทำหลัง สร้าง table project_has_user
 
     // find class has meeting schedule
-    const classHasMeetingSchedule =
+    const classHasMeetingSchedules =
       await this.classHasMeetingScheduleService.list(sort, {
         classId: toMongoObjectId({ value: classId, key: 'classId' }),
         startDate: { $lte: new Date() },
         deletedAt: null,
         status: true,
       });
-    if (classHasMeetingSchedule.statusCode !== 200)
+    if (classHasMeetingSchedules.statusCode !== 200)
       return response
-        .status(classHasMeetingSchedule.statusCode)
-        .send(classHasMeetingSchedule);
+        .status(classHasMeetingSchedules.statusCode)
+        .send(classHasMeetingSchedules);
 
-    const classHasMeetingScheduleIds = classHasMeetingSchedule.data.map(
+    const classHasMeetingScheduleIds = classHasMeetingSchedules.data.map(
       (e) => new Types.ObjectId(e._id),
     );
 
@@ -218,13 +218,13 @@ export class MeetingScheduleController {
 
     // filter data
     const data = [];
-    for (let i = 0; i < classHasMeetingSchedule.data.length; i++) {
+    for (let i = 0; i < classHasMeetingSchedules.data.length; i++) {
       const {
         _id,
         meetingScheduleId: meetingScheduleIdData,
         endDate,
         startDate,
-      } = classHasMeetingSchedule.data[i];
+      } = classHasMeetingSchedules.data[i];
       const { _id: meetingScheduleId, name } = meetingScheduleIdData;
       const findData = projectSendMeetingSchedule.data.find(
         (e) => e.classHasMeetingScheduleId._id?.toString() === _id?.toString(),
@@ -249,8 +249,8 @@ export class MeetingScheduleController {
       });
     }
     response.status(200).send({
-      statusCode: classHasMeetingSchedule.statusCode,
-      message: classHasMeetingSchedule.message,
+      statusCode: classHasMeetingSchedules.statusCode,
+      message: classHasMeetingSchedules.message,
       data,
     });
   }

@@ -55,6 +55,8 @@ export class ProjectSendMeetingScheduleService {
           meetingScheduleId: mMeetingScheduleId,
           classId: mClassId,
           deletedAt: null,
+          status: true,
+          startDate: { $lte: new Date() },
         });
       if (!meetingScheduleInClass)
         return {

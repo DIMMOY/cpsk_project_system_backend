@@ -11,6 +11,7 @@ import { IsAdminMiddleware } from 'src/middleware/isAdmin.middleware';
 import { IsStudentMiddleware } from 'src/middleware/isStudent.middleware';
 import { ClassHasDocumentSchema } from 'src/schema/classHasDocument.schema';
 import { DocumentSchema } from 'src/schema/document.schema';
+import { ProjectSchema } from 'src/schema/project.schema';
 import { ProjectSendDocumentSchema } from 'src/schema/projectSendDocument.schema';
 import { UserSchema } from 'src/schema/user.schema';
 import { UserHasRoleSchema } from 'src/schema/userHasRole.schema';
@@ -28,6 +29,7 @@ import { UserHasRoleService } from 'src/services/userHasRole.service';
       { name: 'project_send_document', schema: ProjectSendDocumentSchema },
       { name: 'user', schema: UserSchema },
       { name: 'user_has_role', schema: UserHasRoleSchema },
+      { name: 'project', schema: ProjectSchema },
     ]),
   ],
   controllers: [DocumentController],

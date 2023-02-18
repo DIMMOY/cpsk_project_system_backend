@@ -51,6 +51,32 @@ export class ClassHasDocumentService {
     }
   }
 
+  async findOne(filter: any): Promise<ResponsePattern> {
+    try {
+      const data = await this.classHasDocumentModel
+        .findOne(filter)
+        .populate('documentId');
+      if (!data) {
+        return {
+          statusCode: 404,
+          message: 'ClassHasDocument Not Found',
+        };
+      }
+      return {
+        statusCode: 200,
+        message: 'Find ClassHasDocument Successful',
+        data,
+      };
+    } catch (error) {
+      console.log(error);
+      return {
+        statusCode: 400,
+        message: 'Find ClassHasDocument Error',
+        error,
+      };
+    }
+  }
+
   async list(sort: string | null, filter: any): Promise<ResponsePattern> {
     try {
       const typeSort = {

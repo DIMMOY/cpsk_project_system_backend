@@ -1,4 +1,4 @@
-import { PartialType } from '@nestjs/mapped-types';
+import { PartialType, PickType } from '@nestjs/mapped-types';
 import { Transform, Type } from 'class-transformer';
 import {
   ValidateIf,
@@ -6,6 +6,9 @@ import {
   IsISO8601,
   IsIn,
   IsNotEmpty,
+  IsArray,
+  ArrayMinSize,
+  ArrayNotEmpty,
 } from 'class-validator';
 import { Types } from 'mongoose';
 import { toMongoObjectId } from 'src/utils/mongoDB.utils';
@@ -20,6 +23,19 @@ export class ProjectSendDocumentCreateDto {
   @Type(() => Types.ObjectId)
   @Transform(toMongoObjectId)
   documentId: string;
+
+  @IsArray()
+  @ArrayNotEmpty()
+  @IsString({ each: true })
+  pathDocument: Array<string>;
 }
 
-// export class ClassUpdateDto extends PartialType(ClassHasProjectCreateDto) {}
+export class ProjectSendDocumentDeleteDto extends PickType(
+  ProjectSendDocumentCreateDto,
+  ['projectId', 'documentId'] as const,
+) {}
+
+export class ProjectSendDocumenteBodyDto extends PickType(
+  ProjectSendDocumentCreateDto,
+  ['pathDocument'] as const,
+) {}

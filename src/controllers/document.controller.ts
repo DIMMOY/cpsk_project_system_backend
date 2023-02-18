@@ -3,7 +3,6 @@ import {
   Controller,
   Delete,
   Get,
-  HttpCode,
   Param,
   Post,
   Put,
@@ -20,6 +19,7 @@ import {
   ClassHasDocumentStatusBodyDto,
 } from 'src/dto/classHasDocument.dto';
 import { DocumentCreateDto, DocumentUpdateDto } from 'src/dto/document.dto';
+import { ProjectSendDocumenteBodyDto } from 'src/dto/projectSendDocument.dto';
 import { ClassHasDocumentService } from 'src/services/classHasDocument.service';
 import { DocumentService } from 'src/services/document.service';
 import { ProjectSendDocumentService } from 'src/services/projectSendDocument.service';
@@ -102,6 +102,69 @@ export class DocumentController {
     });
   }
 
+  @Get(`class/:classId/project/:projectId/${defaultPath}/:documentId/detail`)
+  async getSendMeetingScheduleDetail(
+    @Param('classId') classId: string,
+    @Param('documentId') documentId: string,
+    @Param('projectId') projectId: string,
+    @Req() request,
+    @Res() response,
+  ) {
+    const { _id: userId } = request.user;
+    if (!userId)
+      return response
+        .status(403)
+        .send({ statusCode: 403, message: 'Permission Denied' });
+    // เช็ค project กับ userId ว่ามีสามารถเข้าถึงได้มั๊ยกรณีเป็น student กับ advisor
+    // ไว้กลับมาทำหลัง สร้าง table project_has_user
+
+    // find class has document id
+    const documentResponse = await this.classHasDocumentService.findOne({
+      classId: toMongoObjectId({
+        value: classId,
+        key: 'classId',
+      }),
+      documentId: toMongoObjectId({
+        value: documentId,
+        key: 'documentId',
+      }),
+      deletedAt: null,
+    });
+    if (documentResponse.statusCode !== 200)
+      return response
+        .status(documentResponse.statusCode)
+        .send(documentResponse);
+
+    const { startDate, endDate, _id } = documentResponse.data;
+    const chdResponse = await this.projectSendDocumentService.findOne({
+      classHasDocumentId: _id,
+      projectId: toMongoObjectId({ value: projectId, key: 'projectId' }),
+      deletedAt: null,
+    });
+    if (chdResponse.statusCode !== 200)
+      return response.status(chdResponse.statusCode).send(chdResponse);
+
+    const { data } = chdResponse;
+    const sendStatus = data
+      ? data.updatedAt.getTime() <= data.classHasDocumentId.endDate.getTime() &&
+        data.status
+        ? 1
+        : data.status
+        ? 3
+        : 2
+      : 0;
+
+    response.status(chdResponse.statusCode).send({
+      statusCode: chdResponse.statusCode,
+      message: chdResponse.message,
+      data: {
+        ...data?._doc,
+        ...{ sendStatus, startDate, endDate },
+        document: documentResponse.data.documentId?._doc,
+      },
+    });
+  }
+
   @Get(`class/:classId/project/:projectId/${defaultPath}`)
   async listSendDocumentInClass(
     @Param('classId') classId: string,
@@ -121,6 +184,7 @@ export class DocumentController {
     // find class has document
     const classHasDocuments = await this.classHasDocumentService.list(sort, {
       classId: toMongoObjectId({ value: classId, key: 'classId' }),
+      startDate: { $lte: new Date() },
       deletedAt: null,
       status: true,
     });
@@ -129,15 +193,15 @@ export class DocumentController {
         .status(classHasDocuments.statusCode)
         .send(classHasDocuments);
 
-    const documentIds = classHasDocuments.data.map(
-      (e) => new Types.ObjectId(e.documentId._id),
+    const classHasDocumentIds = classHasDocuments.data.map(
+      (e) => new Types.ObjectId(e._id),
     );
 
     // find project send document
     const projectSendDocument = await this.projectSendDocumentService.list(
       sort,
       {
-        documentId: { $in: documentIds },
+        classHasDocumentId: { $in: classHasDocumentIds },
         projectId: toMongoObjectId({ value: projectId, key: 'projectId' }),
         deletedAt: null,
       },
@@ -158,7 +222,7 @@ export class DocumentController {
       } = classHasDocuments.data[i];
       const { _id: documentId, name, description } = documentIdData;
       const findData = projectSendDocument.data.find(
-        (e) => e.documentId._id?.toString() === documentId?.toString(),
+        (e) => e.classHasDocumentId._id?.toString() === _id?.toString(),
       );
       const sendStatus = findData
         ? findData.updatedAt.getTime() <= endDate.getTime()
@@ -172,6 +236,7 @@ export class DocumentController {
         description,
         startDate,
         endDate,
+        pathDocument: findData ? findData.pathDocument : [],
         sentAt: findData ? findData.updatedAt : null,
         sendStatus,
       });
@@ -186,6 +251,30 @@ export class DocumentController {
   @Post(defaultPath)
   async createDocument(@Body() body: DocumentCreateDto, @Res() response) {
     const res = await this.documentService.create(body);
+    response.status(res.statusCode).send(res);
+  }
+
+  @Post(`project/:projectId/${defaultPath}/:documentId`)
+  async createSendDocument(
+    @Param('projectId') projectId: string,
+    @Param('documentId') documentId: string,
+    @Body() body: ProjectSendDocumenteBodyDto,
+    @Req() request,
+    @Res() response,
+  ) {
+    const { _id: userId } = request.user;
+    if (!userId)
+      return response
+        .status(403)
+        .send({ statusCode: 403, message: 'Permission Denied' });
+    // เช็ค project กับ userId ว่ามีสามารถเข้าถึงได้มั๊ยกรณีเป็น student กับ advisor
+    // ไว้กลับมาทำหลัง สร้าง table project_has_user
+
+    const res = await this.projectSendDocumentService.createOrUpdate({
+      ...body,
+      projectId,
+      documentId,
+    });
     response.status(res.statusCode).send(res);
   }
 

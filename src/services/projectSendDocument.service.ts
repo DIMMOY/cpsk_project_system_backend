@@ -4,6 +4,8 @@ import { Model } from 'mongoose';
 import { DocumentUpdateDto } from 'src/dto/document.dto';
 import { ProjectSendDocumentCreateDto } from 'src/dto/projectSendDocument.dto';
 import { ResponsePattern } from 'src/interfaces/responsePattern.interface';
+import { ClassHasDocument } from 'src/schema/classHasDocument.schema';
+import { Project } from 'src/schema/project.schema';
 import { ProjectSendDocument } from 'src/schema/projectSendDocument.schema';
 import { toMongoObjectId } from 'src/utils/mongoDB.utils';
 
@@ -12,31 +14,96 @@ export class ProjectSendDocumentService {
   constructor(
     @InjectModel('project_send_document')
     private projectSendDocumentModel: Model<ProjectSendDocument>,
+    @InjectModel('project')
+    private projectModel: Model<Project>,
+    @InjectModel('class_has_document')
+    private classHasDocumentModel: Model<ClassHasDocument>,
   ) {}
 
   async createOrUpdate(
     body: ProjectSendDocumentCreateDto,
   ): Promise<ResponsePattern> {
     try {
-      const { projectId, documentId } = body;
-      await this.projectSendDocumentModel.findOneAndUpdate(
+      const { projectId, documentId, pathDocument } = body;
+      const mProjectId = toMongoObjectId({
+        value: projectId,
+        key: 'projectId',
+      });
+      const mDocumentId = toMongoObjectId({
+        value: documentId,
+        key: 'documentId',
+      });
+
+      // ===== check 404 =====
+      const project = await this.projectModel
+        .findOne({
+          _id: mProjectId,
+          deletedAt: null,
+        })
+        .populate('classId');
+      if (!project)
+        return {
+          statusCode: 404,
+          message: 'Project Not Found',
+        };
+      const mClassId = project.classId._id;
+      const documentInClass = await this.classHasDocumentModel.findOne({
+        documentId: mDocumentId,
+        classId: mClassId,
+        deletedAt: null,
+        status: true,
+        startDate: { $lte: new Date() },
+      });
+      if (!documentInClass)
+        return {
+          statusCode: 404,
+          message: 'Document Not Found',
+        };
+      // =====================
+
+      await this.projectSendDocumentModel.updateOne(
         {
-          projectId,
-          documentId,
+          projectId: mProjectId,
+          classHasDocumentId: documentInClass._id,
           deletedAt: null,
         },
-        body,
+        {
+          projectId: mProjectId,
+          classHasDocumentId: documentInClass._id,
+          pathDocument,
+        },
         { upsert: true },
       );
       return {
         statusCode: 201,
-        message: 'Create ProjectSendDocument Successful',
+        message: 'Create Or Update ProjectSendDocument Successful',
       };
     } catch (error) {
       console.error(error);
       return {
         statusCode: 400,
-        message: 'Create ProjectSendDocument Error',
+        message: 'Create Or Update ProjectSendDocument Error',
+        error,
+      };
+    }
+  }
+
+  async findOne(filter: any): Promise<ResponsePattern> {
+    try {
+      const data = await this.projectSendDocumentModel
+        .findOne(filter)
+        .populate('classHasDocumentId')
+        .populate('projectId');
+      return {
+        statusCode: 200,
+        message: 'Find ProjectSendDocument Successful',
+        data,
+      };
+    } catch (error) {
+      console.log(error);
+      return {
+        statusCode: 400,
+        message: 'Find ProjectSendDocument Error',
         error,
       };
     }
@@ -56,7 +123,7 @@ export class ProjectSendDocumentService {
         .find(filter, null, {
           sort: sortSelect,
         })
-        .populate('documentId');
+        .populate('classHasDocumentId');
       return {
         statusCode: 200,
         message: 'List ProjectSendDocument Successful',

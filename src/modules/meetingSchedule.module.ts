@@ -34,10 +34,7 @@ import { UserHasRoleService } from 'src/services/userHasRole.service';
         name: 'project_send_meeting_schedule',
         schema: ProjectSendMeetingScheduleSchema,
       },
-      {
-        name: 'project',
-        schema: ProjectSchema,
-      },
+      { name: 'project', schema: ProjectSchema },
       { name: 'user', schema: UserSchema },
       { name: 'user_has_role', schema: UserHasRoleSchema },
     ]),
