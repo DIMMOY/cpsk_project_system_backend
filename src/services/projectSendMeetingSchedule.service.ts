@@ -23,24 +23,19 @@ export class ProjectSendMeetingScheduleService {
     private classHasMeetingScheduleModel: Model<ClassHasMeetingSchedule>,
   ) {}
 
-  async createOrUpdate(
-    body: ProjectSendMeetingScheduleCreateDto,
-  ): Promise<ResponsePattern> {
+  async createOrUpdate(body: {
+    projectId: Types.ObjectId;
+    meetingScheduleId: Types.ObjectId;
+    detail?: string;
+    status?: boolean;
+  }): Promise<ResponsePattern> {
     try {
-      const { projectId, meetingScheduleId, detail } = body;
-      const mProjectId = toMongoObjectId({
-        value: projectId,
-        key: 'projectId',
-      });
-      const mMeetingScheduleId = toMongoObjectId({
-        value: meetingScheduleId,
-        key: 'meetingScheduleId',
-      });
+      const { projectId, meetingScheduleId, detail, status } = body;
 
       // ===== check 404 =====
       const project = await this.projectModel
         .findOne({
-          _id: mProjectId,
+          _id: projectId,
           deletedAt: null,
         })
         .populate('classId');
@@ -52,7 +47,7 @@ export class ProjectSendMeetingScheduleService {
       const mClassId = project.classId._id;
       const meetingScheduleInClass =
         await this.classHasMeetingScheduleModel.findOne({
-          meetingScheduleId: mMeetingScheduleId,
+          meetingScheduleId: meetingScheduleId,
           classId: mClassId,
           deletedAt: null,
           status: true,
@@ -65,17 +60,27 @@ export class ProjectSendMeetingScheduleService {
         };
       // =====================
 
+      const reqBody: {
+        projectId: Types.ObjectId;
+        classHasMeetingScheduleId: Types.ObjectId;
+        detail?: string;
+        status?: boolean;
+        deletedAt: null;
+      } = {
+        projectId,
+        classHasMeetingScheduleId: meetingScheduleInClass._id,
+        deletedAt: null,
+      };
+
+      if (detail) reqBody.detail = detail;
+      if (status !== undefined) reqBody.status = status;
+
       await this.projectSendMeetingScheduleModel.updateOne(
         {
-          projectId: mProjectId,
+          projectId: projectId,
           classHasMeetingScheduleId: meetingScheduleInClass._id,
-          deletedAt: null,
         },
-        {
-          projectId: mProjectId,
-          classHasMeetingScheduleId: meetingScheduleInClass._id,
-          detail,
-        },
+        reqBody,
         { upsert: true },
       );
       return {
@@ -143,9 +148,9 @@ export class ProjectSendMeetingScheduleService {
     }
   }
 
-  async update(_id: string, body: DocumentUpdateDto): Promise<ResponsePattern> {
+  async update(filter: any, body: any): Promise<ResponsePattern> {
     try {
-      await this.projectSendMeetingScheduleModel.updateOne({ _id }, body, {
+      await this.projectSendMeetingScheduleModel.updateOne(filter, body, {
         runValidators: true,
       });
       return {

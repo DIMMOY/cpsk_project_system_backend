@@ -20,7 +20,10 @@ import {
   MeetingScheduleCreateDto,
   MeetingScheduleUpdateDto,
 } from 'src/dto/meetingSchedule.dto';
-import { ProjectSendMeetingScheduleBodyDto } from 'src/dto/projectSendMeetingSchedule.dto';
+import {
+  ProjectSendMeetingScheduleBodyDto,
+  ProjectSendMeetingScheduleChangeStatusDto,
+} from 'src/dto/projectSendMeetingSchedule.dto';
 import { ClassHasMeetingScheduleService } from 'src/services/classHasMeetingSchedule.service';
 import { MeetingScheduleService } from 'src/services/meetingSchedule.service';
 import { ProjectSendMeetingScheduleService } from 'src/services/projectSendMeetingSchedule.service';
@@ -156,8 +159,8 @@ export class MeetingScheduleController {
           data.classHasMeetingScheduleId.endDate.getTime() && data.status
         ? 1
         : data.status
-        ? 3
-        : 2
+        ? 2
+        : 3
       : 0;
 
     response.status(chmResponse.statusCode).send({
@@ -234,8 +237,8 @@ export class MeetingScheduleController {
         ? findData.updatedAt.getTime() <= endDate.getTime() && findData.status
           ? 1
           : findData.status
-          ? 3
-          : 2
+          ? 2
+          : 3
         : 0;
       data.push({
         _id,
@@ -267,7 +270,7 @@ export class MeetingScheduleController {
   @Post(`project/:projectId/${defaultPath}/:mtId`)
   async createSendMeetingSchedule(
     @Param('projectId') projectId: string,
-    @Param('mtId') meetingScheduleId: string,
+    @Param('mtId') mtId: string,
     @Body() body: ProjectSendMeetingScheduleBodyDto,
     @Req() request,
     @Res() response,
@@ -280,10 +283,14 @@ export class MeetingScheduleController {
     // เช็ค project กับ userId ว่ามีสามารถเข้าถึงได้มั๊ยกรณีเป็น student กับ advisor
     // ไว้กลับมาทำหลัง สร้าง table project_has_user
 
+    const { detail } = body;
     const res = await this.projectSendMeetingSchedulService.createOrUpdate({
-      ...body,
-      projectId,
-      meetingScheduleId,
+      projectId: toMongoObjectId({ value: projectId, key: 'projectId' }),
+      meetingScheduleId: toMongoObjectId({
+        value: mtId,
+        key: 'meetingScheduleId',
+      }),
+      detail,
     });
     response.status(res.statusCode).send(res);
   }
@@ -327,6 +334,34 @@ export class MeetingScheduleController {
       ...body,
       classId,
       meetingScheduleId,
+    });
+    response.status(res.statusCode).send(res);
+  }
+
+  @Patch(`project/:projectId/${defaultPath}/:mtId`)
+  async changeStatusInSendMeetingSchedule(
+    @Param('projectId') projectId: string,
+    @Param('mtId') mtId: string,
+    @Body() body: ProjectSendMeetingScheduleChangeStatusDto,
+    @Req() request,
+    @Res() response,
+  ) {
+    const { _id: userId } = request.user;
+    if (!userId)
+      return response
+        .status(403)
+        .send({ statusCode: 403, message: 'Permission Denied' });
+    // เช็ค project กับ userId ว่ามีสามารถเข้าถึงได้มั๊ยกรณีเป็น student กับ advisor
+    // ไว้กลับมาทำหลัง สร้าง table project_has_user
+
+    const { status } = body;
+    const res = await this.projectSendMeetingSchedulService.createOrUpdate({
+      projectId: toMongoObjectId({ value: projectId, key: 'projectId' }),
+      meetingScheduleId: toMongoObjectId({
+        value: mtId,
+        key: 'meetingScheduleId',
+      }),
+      status,
     });
     response.status(res.statusCode).send(res);
   }

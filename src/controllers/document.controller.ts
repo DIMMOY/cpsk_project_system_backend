@@ -103,7 +103,7 @@ export class DocumentController {
   }
 
   @Get(`class/:classId/project/:projectId/${defaultPath}/:documentId/detail`)
-  async getSendMeetingScheduleDetail(
+  async getSendDocumentDetail(
     @Param('classId') classId: string,
     @Param('documentId') documentId: string,
     @Param('projectId') projectId: string,
@@ -146,11 +146,8 @@ export class DocumentController {
 
     const { data } = chdResponse;
     const sendStatus = data
-      ? data.updatedAt.getTime() <= data.classHasDocumentId.endDate.getTime() &&
-        data.status
+      ? data.updatedAt.getTime() <= data.classHasDocumentId.endDate.getTime()
         ? 1
-        : data.status
-        ? 3
         : 2
       : 0;
 
@@ -307,7 +304,7 @@ export class DocumentController {
   }
 
   @Patch(`class/:classId/${defaultPath}/:documentId/date/status`)
-  async changeMeetingScheduleInClass(
+  async changeDocumentInClass(
     @Param('classId') classId: string,
     @Param('documentId') documentId: string,
     @Body() body: ClassHasDocumentStatusBodyDto,
@@ -324,6 +321,28 @@ export class DocumentController {
   @Delete(`${defaultPath}/:id`)
   async deleteDocument(@Param('id') id: string, @Res() response) {
     const res = await this.documentService.delete(id);
+    response.status(res.statusCode).send(res);
+  }
+
+  @Delete(`project/:projectId/${defaultPath}/:documentId`)
+  async deleteSendDocument(
+    @Param('documentId') documentId: string,
+    @Param('projectId') projectId: string,
+    @Req() request,
+    @Res() response,
+  ) {
+    const { _id: userId } = request.user;
+    if (!userId)
+      return response
+        .status(403)
+        .send({ statusCode: 403, message: 'Permission Denied' });
+    // เช็ค project กับ userId ว่ามีสามารถเข้าถึงได้มั๊ยกรณีเป็น student กับ advisor
+    // ไว้กลับมาทำหลัง สร้าง table project_has_user
+
+    const res = await this.projectSendDocumentService.delete({
+      projectId,
+      documentId,
+    });
     response.status(res.statusCode).send(res);
   }
 }

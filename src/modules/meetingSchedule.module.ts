@@ -70,6 +70,10 @@ export class MeetingScheduleModule implements NestModule {
       },
       { path: 'meeting-schedule', method: RequestMethod.DELETE },
     );
+    consumer.apply(IsAdvisorMiddleware).forRoutes({
+      path: 'project/:projectId/meeting-schedule/:mtId',
+      method: RequestMethod.PATCH,
+    });
     consumer.apply(IsStudentMiddleware).forRoutes(
       {
         path: 'project/:projectId/meeting-schedule/:mtId',

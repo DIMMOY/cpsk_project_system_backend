@@ -2,7 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { DocumentUpdateDto } from 'src/dto/document.dto';
-import { ProjectSendDocumentCreateDto } from 'src/dto/projectSendDocument.dto';
+import {
+  ProjectSendDocumentCreateDto,
+  ProjectSendDocumentDeleteDto,
+} from 'src/dto/projectSendDocument.dto';
 import { ResponsePattern } from 'src/interfaces/responsePattern.interface';
 import { ClassHasDocument } from 'src/schema/classHasDocument.schema';
 import { Project } from 'src/schema/project.schema';
@@ -65,12 +68,12 @@ export class ProjectSendDocumentService {
         {
           projectId: mProjectId,
           classHasDocumentId: documentInClass._id,
-          deletedAt: null,
         },
         {
           projectId: mProjectId,
           classHasDocumentId: documentInClass._id,
           pathDocument,
+          deletedAt: null,
         },
         { upsert: true },
       );
@@ -158,12 +161,53 @@ export class ProjectSendDocumentService {
     }
   }
 
-  async delete(_id: string): Promise<ResponsePattern> {
+  async delete(body: ProjectSendDocumentDeleteDto): Promise<ResponsePattern> {
     try {
+      const { projectId, documentId } = body;
+      const mProjectId = toMongoObjectId({
+        value: projectId,
+        key: 'projectId',
+      });
+      const mDocumentId = toMongoObjectId({
+        value: documentId,
+        key: 'documentId',
+      });
+
+      // ===== check 404 =====
+      const project = await this.projectModel
+        .findOne({
+          _id: mProjectId,
+          deletedAt: null,
+        })
+        .populate('classId');
+      if (!project)
+        return {
+          statusCode: 404,
+          message: 'Project Not Found',
+        };
+      const mClassId = project.classId._id;
+      const documentInClass = await this.classHasDocumentModel.findOne({
+        documentId: mDocumentId,
+        classId: mClassId,
+        deletedAt: null,
+      });
+      if (!documentInClass)
+        return {
+          statusCode: 404,
+          message: 'Document Not Found',
+        };
+      // =====================
+
       await this.projectSendDocumentModel.updateOne(
-        { _id },
+        {
+          projectId: mProjectId,
+          classHasDocumentId: documentInClass._id,
+          deletedAt: null,
+        },
         { deletedAt: new Date() },
-        { runValidators: true },
+        {
+          timestamps: false,
+        },
       );
       return {
         statusCode: 200,

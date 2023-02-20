@@ -25,6 +25,11 @@ export class ProjectSendMeetingScheduleDeleteDto extends PickType(
   ['projectId', 'meetingScheduleId'] as const,
 ) {}
 
+export class ProjectSendMeetingScheduleChangeStatusDto {
+  @IsBoolean()
+  status: boolean;
+}
+
 export class ProjectSendMeetingScheduleBodyDto extends PickType(
   ProjectSendMeetingScheduleCreateDto,
   ['detail'] as const,
