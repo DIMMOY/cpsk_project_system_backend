@@ -15,6 +15,9 @@ export class User {
   @Prop({ default: null })
   deletedAt: Date;
 
+  @Prop({ default: null })
+  imageUrl: string;
+
   @Prop()
   createdAt: Date;
 

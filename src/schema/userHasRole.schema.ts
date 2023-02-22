@@ -15,7 +15,7 @@ export class UserHasRole {
   @Prop({ default: null })
   deletedAt: Date;
 
-  @Prop({ required: true })
+  @Prop({ default: true })
   currentRole: boolean;
 
   @Prop()

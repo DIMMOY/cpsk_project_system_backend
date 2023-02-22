@@ -1,5 +1,23 @@
-import { Body, Controller, Post, Patch, Get, Req, Res } from '@nestjs/common';
-import { ChangeCurrentRoleDto } from 'src/dto/userHasRole.dto';
+import {
+  Body,
+  Controller,
+  Post,
+  Patch,
+  Get,
+  Req,
+  Res,
+  Query,
+  Delete,
+  Put,
+} from '@nestjs/common';
+import { request } from 'http';
+import { CreateOrUpdateUserDto } from 'src/dto/user.dto';
+import {
+  ChangeCurrentRoleDto,
+  CreateUserInRoleDto,
+  DeleteUserInRoleDto,
+  FindRoleDto,
+} from 'src/dto/userHasRole.dto';
 import { JoinClassDto } from 'src/dto/userJoinClass.dto';
 import { ClassService } from 'src/services/class.service';
 import { UserService } from 'src/services/user.service';
@@ -36,6 +54,69 @@ export class UserController {
       message: res.message,
       data: res.data.length ? res.data[0] : null,
     });
+  }
+
+  @Get('/role')
+  async findUserInRole(
+    @Query('n') role: number,
+    @Req() request,
+    @Res() response,
+  ) {
+    const { _id: userId } = request.user;
+    if (!userId)
+      return response
+        .status(403)
+        .send({ statusCode: 403, message: 'Permission Denied' });
+
+    const res = await this.userHasRoleService.list({
+      role,
+      deletedAt: null,
+    });
+    response.status(res.statusCode).send(res);
+  }
+
+  @Post('/role')
+  async addUserInRole(@Body() reqBody: CreateUserInRoleDto, @Res() response) {
+    const { email, role } = reqBody;
+    const emailParts = email.split('@');
+    const domain = emailParts[1];
+    if (domain !== 'ku.th') {
+      response
+        .status(400)
+        .send({ statusCode: 400, message: 'อีเมล @ku.th เท่านั้น' });
+      return;
+    }
+
+    let userId;
+    const findEmail = await this.userService.findOne({
+      email,
+      deletedAt: null,
+    });
+
+    if (findEmail.statusCode !== 200) {
+      const createUser = await this.userService.createOrUpdate({
+        email,
+        lastLoginAt: new Date(),
+      });
+      if (createUser.statusCode === 200) {
+        userId = createUser.data.userId;
+      } else {
+        response.status(createUser.statusCode).send(createUser);
+        return;
+      }
+    } else userId = findEmail.data._id;
+
+    // delete student role if add advisor role
+    if (role === 1)
+      await this.userHasRoleService.delete({
+        userId,
+        role: 0,
+        deletedAt: null,
+      });
+
+    const res = await this.userHasRoleService.createOrUpdate({ userId, role });
+
+    response.status(res.statusCode).send(res);
   }
 
   @Post('/class/join')
@@ -75,6 +156,20 @@ export class UserController {
     response.status(res.statusCode).send(res);
   }
 
+  @Put('/role')
+  async deleteUserInRole(
+    @Body() reqBody: DeleteUserInRoleDto,
+    @Res() response,
+  ) {
+    const { userId, role } = reqBody;
+    const res = await this.userHasRoleService.delete({
+      userId: { $in: userId },
+      role,
+      deletedAt: null,
+    });
+    response.status(res.statusCode).send(res);
+  }
+
   @Patch('/current-role')
   async changeCurrentRole(
     @Body() reqBody: ChangeCurrentRoleDto,
@@ -91,10 +186,18 @@ export class UserController {
   }
 
   @Patch('/last-login')
-  async updateLastLoginAt(@Req() request, @Res() response) {
+  async updateLastLoginAt(
+    @Body() reqBody: CreateOrUpdateUserDto,
+    @Req() request,
+    @Res() response,
+  ) {
     const { email } = request.user;
     const lastLoginAt = new Date();
-    const res = await this.userService.createOrUpdate({ email, lastLoginAt });
+    const res = await this.userService.createOrUpdate({
+      email,
+      lastLoginAt,
+      ...reqBody,
+    });
     response.status(res.statusCode).send(res);
   }
 }

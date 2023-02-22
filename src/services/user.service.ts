@@ -17,7 +17,7 @@ export class UserService {
 
   async createOrUpdate(body: {
     email: string;
-    lastLoginAt: Date;
+    lastLoginAt: Date | null;
   }): Promise<ResponsePattern> {
     try {
       const { email } = body;
@@ -39,7 +39,7 @@ export class UserService {
       let roles: Array<any> | null =
         findRole && findRole.length
           ? findRole.map((a) => ({
-              userId: a.userId, // สำหรับทดสอบเท่านั้น
+              userId: a.userId,
               role: a.role,
               currentRole: a.currentRole,
             }))
@@ -47,7 +47,7 @@ export class UserService {
 
       if (!roles) {
         const createRole = new this.userHasRoleModel({
-          userId: _id, // สำหรับทดสอบเท่านั้น
+          userId: _id,
           role: 0,
           currentRole: true,
         });

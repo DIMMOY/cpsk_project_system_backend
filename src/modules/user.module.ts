@@ -7,6 +7,7 @@ import {
 import { MongooseModule } from '@nestjs/mongoose';
 import { UserController } from 'src/controllers/user.controller';
 import { AuthMiddleware } from 'src/middleware/auth.middleware';
+import { IsAdminMiddleware } from 'src/middleware/isAdmin.middleware';
 import { IsStudentMiddleware } from 'src/middleware/isStudent.middleware';
 import { ClassSchema } from 'src/schema/class.schema';
 import { UserSchema } from 'src/schema/user.schema';
@@ -37,6 +38,13 @@ import { UserJoinClassService } from 'src/services/userJoinClass.service';
 })
 export class UserModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(IsAdminMiddleware)
+      .forRoutes(
+        { path: 'user/role', method: RequestMethod.GET },
+        { path: 'user/role', method: RequestMethod.POST },
+        { path: 'user/role', method: RequestMethod.PUT },
+      );
     consumer
       .apply(IsStudentMiddleware)
       .forRoutes(

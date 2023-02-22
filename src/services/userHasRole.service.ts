@@ -12,6 +12,35 @@ export class UserHasRoleService {
     private userHasRoleModel: Model<UserHasRole>,
   ) {}
 
+  async createOrUpdate(reqBody: {
+    userId: Types.ObjectId;
+    role: number;
+  }): Promise<ResponsePattern> {
+    try {
+      const { userId, role } = reqBody;
+      await this.userHasRoleModel.updateOne(
+        {
+          userId,
+          role,
+          deletedAt: null,
+        },
+        { userId, role },
+        { upsert: true, new: true },
+      );
+      return {
+        statusCode: 200,
+        message: 'Create UserHasRole successful',
+      };
+    } catch (error) {
+      console.log(error);
+      return {
+        statusCode: 400,
+        message: 'Create UserHasRole error',
+        error,
+      };
+    }
+  }
+
   async changeCurrentRole(reqBody: {
     userId: Types.ObjectId;
     role: number;
@@ -38,7 +67,7 @@ export class UserHasRoleService {
 
   async list(filter: any): Promise<ResponsePattern> {
     try {
-      const data = await this.userHasRoleModel.find(filter);
+      const data = await this.userHasRoleModel.find(filter).populate('userId');
       if (!data) {
         return {
           statusCode: 404,
@@ -57,6 +86,20 @@ export class UserHasRoleService {
         message: 'Find UserHasRole Error',
         error,
       };
+    }
+  }
+
+  async delete(filter: any): Promise<ResponsePattern> {
+    try {
+      await this.userHasRoleModel.updateMany(
+        filter,
+        { deletedAt: new Date() },
+        { timestamps: false },
+      );
+      return { statusCode: 200, message: 'Delete UserHasRole Successful' };
+    } catch (error) {
+      console.error(error);
+      return { statusCode: 400, message: 'Delete UserHasRole Error', error };
     }
   }
 }
