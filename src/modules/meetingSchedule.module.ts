@@ -13,11 +13,13 @@ import { IsStudentMiddleware } from 'src/middleware/isStudent.middleware';
 import { ClassHasMeetingScheduleSchema } from 'src/schema/classHasMeetingSchedule.schema';
 import { MeetingScheduleSchema } from 'src/schema/meetingSchedule.schema';
 import { ProjectSchema } from 'src/schema/project.schema';
+import { ProjectHasUserSchema } from 'src/schema/projectHasUser.schema';
 import { ProjectSendMeetingScheduleSchema } from 'src/schema/projectSendMeetingSchedule.schema';
 import { UserSchema } from 'src/schema/user.schema';
 import { UserHasRoleSchema } from 'src/schema/userHasRole.schema';
 import { ClassHasMeetingScheduleService } from 'src/services/classHasMeetingSchedule.service';
 import { MeetingScheduleService } from 'src/services/meetingSchedule.service';
+import { ProjectHasUserService } from 'src/services/projectHasUser.service';
 import { ProjectSendMeetingScheduleService } from 'src/services/projectSendMeetingSchedule.service';
 import { UserService } from 'src/services/user.service';
 import { UserHasRoleService } from 'src/services/userHasRole.service';
@@ -37,6 +39,7 @@ import { UserHasRoleService } from 'src/services/userHasRole.service';
       { name: 'project', schema: ProjectSchema },
       { name: 'user', schema: UserSchema },
       { name: 'user_has_role', schema: UserHasRoleSchema },
+      { name: 'project_has_user', schema: ProjectHasUserSchema },
     ]),
   ],
   controllers: [MeetingScheduleController],
@@ -46,6 +49,7 @@ import { UserHasRoleService } from 'src/services/userHasRole.service';
     ProjectSendMeetingScheduleService,
     UserService,
     UserHasRoleService,
+    ProjectHasUserService,
   ],
   exports: [
     MeetingScheduleService,

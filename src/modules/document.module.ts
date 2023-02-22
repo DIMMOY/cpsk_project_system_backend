@@ -12,11 +12,13 @@ import { IsStudentMiddleware } from 'src/middleware/isStudent.middleware';
 import { ClassHasDocumentSchema } from 'src/schema/classHasDocument.schema';
 import { DocumentSchema } from 'src/schema/document.schema';
 import { ProjectSchema } from 'src/schema/project.schema';
+import { ProjectHasUserSchema } from 'src/schema/projectHasUser.schema';
 import { ProjectSendDocumentSchema } from 'src/schema/projectSendDocument.schema';
 import { UserSchema } from 'src/schema/user.schema';
 import { UserHasRoleSchema } from 'src/schema/userHasRole.schema';
 import { ClassHasDocumentService } from 'src/services/classHasDocument.service';
 import { DocumentService } from 'src/services/document.service';
+import { ProjectHasUserService } from 'src/services/projectHasUser.service';
 import { ProjectSendDocumentService } from 'src/services/projectSendDocument.service';
 import { UserService } from 'src/services/user.service';
 import { UserHasRoleService } from 'src/services/userHasRole.service';
@@ -30,6 +32,7 @@ import { UserHasRoleService } from 'src/services/userHasRole.service';
       { name: 'user', schema: UserSchema },
       { name: 'user_has_role', schema: UserHasRoleSchema },
       { name: 'project', schema: ProjectSchema },
+      { name: 'project_has_user', schema: ProjectHasUserSchema },
     ]),
   ],
   controllers: [DocumentController],
@@ -39,6 +42,7 @@ import { UserHasRoleService } from 'src/services/userHasRole.service';
     ProjectSendDocumentService,
     UserService,
     UserHasRoleService,
+    ProjectHasUserService,
   ],
   exports: [
     DocumentService,

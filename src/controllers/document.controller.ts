@@ -11,8 +11,6 @@ import {
   Res,
 } from '@nestjs/common';
 import { Patch } from '@nestjs/common/decorators';
-import { response } from 'express';
-import { request } from 'http';
 import { Types } from 'mongoose';
 import {
   ClassHasDocumentBodyDto,
@@ -22,6 +20,7 @@ import { DocumentCreateDto, DocumentUpdateDto } from 'src/dto/document.dto';
 import { ProjectSendDocumenteBodyDto } from 'src/dto/projectSendDocument.dto';
 import { ClassHasDocumentService } from 'src/services/classHasDocument.service';
 import { DocumentService } from 'src/services/document.service';
+import { ProjectHasUserService } from 'src/services/projectHasUser.service';
 import { ProjectSendDocumentService } from 'src/services/projectSendDocument.service';
 import { toMongoObjectId } from 'src/utils/mongoDB.utils';
 
@@ -33,6 +32,7 @@ export class DocumentController {
     private readonly documentService: DocumentService,
     private readonly classHasDocumentService: ClassHasDocumentService,
     private readonly projectSendDocumentService: ProjectSendDocumentService,
+    private readonly projectHasUserService: ProjectHasUserService,
   ) {}
 
   @Get(defaultPath)
@@ -111,12 +111,34 @@ export class DocumentController {
     @Res() response,
   ) {
     const { _id: userId } = request.user;
+    const { role } = request;
     if (!userId)
       return response
         .status(403)
         .send({ statusCode: 403, message: 'Permission Denied' });
+
     // เช็ค project กับ userId ว่ามีสามารถเข้าถึงได้มั๊ยกรณีเป็น student กับ advisor
-    // ไว้กลับมาทำหลัง สร้าง table project_has_user
+    if (!role.find((e) => e === 2)) {
+      const findUser = await this.projectHasUserService.findOne({
+        projectId: toMongoObjectId({
+          value: projectId,
+          key: 'projectId',
+        }),
+        userId,
+        classId: toMongoObjectId({
+          value: classId,
+          key: 'classId',
+        }),
+        isAccept: true,
+        deletedAt: null,
+      });
+      if (findUser.statusCode === 404)
+        return response
+          .status(403)
+          .send({ statusCode: 403, message: 'Permission Denied' });
+      else if (findUser.statusCode !== 200)
+        return response.status(findUser.statusCode).send(findUser);
+    }
 
     // find class has document id
     const documentResponse = await this.classHasDocumentService.findOne({
@@ -171,12 +193,34 @@ export class DocumentController {
     @Res() response,
   ) {
     const { _id: userId } = request.user;
+    const { role } = request;
     if (!userId)
       return response
         .status(403)
         .send({ statusCode: 403, message: 'Permission Denied' });
+
     // เช็ค project กับ userId ว่ามีสามารถเข้าถึงได้มั๊ยกรณีเป็น student กับ advisor
-    // ไว้กลับมาทำหลัง สร้าง table project_has_user
+    if (!role.find((e) => e === 2)) {
+      const findUser = await this.projectHasUserService.findOne({
+        projectId: toMongoObjectId({
+          value: projectId,
+          key: 'projectId',
+        }),
+        userId,
+        classId: toMongoObjectId({
+          value: classId,
+          key: 'classId',
+        }),
+        isAccept: true,
+        deletedAt: null,
+      });
+      if (findUser.statusCode === 404)
+        return response
+          .status(403)
+          .send({ statusCode: 403, message: 'Permission Denied' });
+      else if (findUser.statusCode !== 200)
+        return response.status(findUser.statusCode).send(findUser);
+    }
 
     // find class has document
     const classHasDocuments = await this.classHasDocumentService.list(sort, {
@@ -264,8 +308,24 @@ export class DocumentController {
       return response
         .status(403)
         .send({ statusCode: 403, message: 'Permission Denied' });
-    // เช็ค project กับ userId ว่ามีสามารถเข้าถึงได้มั๊ยกรณีเป็น student กับ advisor
-    // ไว้กลับมาทำหลัง สร้าง table project_has_user
+
+    // เช็ค project กับ userId ว่ามีสามารถเข้าถึงได้มั๊ยกรณีเป็น student
+    const findUser = await this.projectHasUserService.findOne({
+      projectId: toMongoObjectId({
+        value: projectId,
+        key: 'projectId',
+      }),
+      userId,
+      isAccept: true,
+      deletedAt: null,
+      role: { $in: [0, 1] }, //owner or partner
+    });
+    if (findUser.statusCode === 404)
+      return response
+        .status(403)
+        .send({ statusCode: 403, message: 'Permission Denied' });
+    else if (findUser.statusCode !== 200)
+      return response.status(findUser.statusCode).send(findUser);
 
     const res = await this.projectSendDocumentService.createOrUpdate({
       ...body,
@@ -336,8 +396,24 @@ export class DocumentController {
       return response
         .status(403)
         .send({ statusCode: 403, message: 'Permission Denied' });
-    // เช็ค project กับ userId ว่ามีสามารถเข้าถึงได้มั๊ยกรณีเป็น student กับ advisor
-    // ไว้กลับมาทำหลัง สร้าง table project_has_user
+
+    // เช็ค project กับ userId ว่ามีสามารถเข้าถึงได้มั๊ยกรณีเป็น student
+    const findUser = await this.projectHasUserService.findOne({
+      projectId: toMongoObjectId({
+        value: projectId,
+        key: 'projectId',
+      }),
+      userId,
+      isAccept: true,
+      deletedAt: null,
+      role: { $in: [0, 1] }, //owner or partner
+    });
+    if (findUser.statusCode === 404)
+      return response
+        .status(403)
+        .send({ statusCode: 403, message: 'Permission Denied' });
+    else if (findUser.statusCode !== 200)
+      return response.status(findUser.statusCode).send(findUser);
 
     const res = await this.projectSendDocumentService.delete({
       projectId,
