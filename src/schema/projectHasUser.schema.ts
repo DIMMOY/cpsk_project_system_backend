@@ -25,6 +25,18 @@ export class ProjectHasUser {
   @Prop({ default: false })
   isAccept: boolean;
 
+  // if role = 3 (committee)
+  @Prop({ default: null, type: Types.ObjectId, ref: 'match_committee' })
+  matchCommitteeId: Types.ObjectId;
+
+  // if role = 3 (committee)
+  @Prop({
+    default: null,
+    type: Types.ObjectId,
+    ref: 'match_committee_has_group',
+  })
+  matchCommitteeHasGroupId: Types.ObjectId;
+
   @Prop()
   createdAt: Date;
 

@@ -8,6 +8,7 @@ import { ProjectModule } from './project.module';
 import { UserModule } from './user.module';
 import { MeetingScheduleModule } from './meetingSchedule.module';
 import { AssessmentModule } from './assessment.module';
+import { MatchCommitteeModule } from './matchCommittee.module';
 @Module({
   imports: [
     MongooseModule.forRoot(MG_URI),
@@ -18,6 +19,7 @@ import { AssessmentModule } from './assessment.module';
     DocumentModule,
     MeetingScheduleModule,
     AssessmentModule,
+    MatchCommitteeModule,
   ],
 })
 export class AppModule {}

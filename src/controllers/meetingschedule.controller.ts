@@ -26,6 +26,7 @@ import {
 } from 'src/dto/projectSendMeetingSchedule.dto';
 import { ClassHasMeetingScheduleService } from 'src/services/classHasMeetingSchedule.service';
 import { MeetingScheduleService } from 'src/services/meetingSchedule.service';
+import { ProjectHasUserService } from 'src/services/projectHasUser.service';
 import { ProjectSendMeetingScheduleService } from 'src/services/projectSendMeetingSchedule.service';
 import { toMongoObjectId } from 'src/utils/mongoDB.utils';
 
@@ -37,6 +38,7 @@ export class MeetingScheduleController {
     private readonly meetingScheduleService: MeetingScheduleService,
     private readonly classHasMeetingScheduleService: ClassHasMeetingScheduleService,
     private readonly projectSendMeetingSchedulService: ProjectSendMeetingScheduleService,
+    private readonly projectHasUserService: ProjectHasUserService,
   ) {}
 
   @Get(defaultPath)
@@ -122,12 +124,34 @@ export class MeetingScheduleController {
     @Res() response,
   ) {
     const { _id: userId } = request.user;
+    const { role } = request;
     if (!userId)
       return response
         .status(403)
         .send({ statusCode: 403, message: 'Permission Denied' });
+
     // เช็ค project กับ userId ว่ามีสามารถเข้าถึงได้มั๊ยกรณีเป็น student กับ advisor
-    // ไว้กลับมาทำหลัง สร้าง table project_has_user
+    if (!role.find((e) => e === 2)) {
+      const findUser = await this.projectHasUserService.findOne({
+        projectId: toMongoObjectId({
+          value: projectId,
+          key: 'projectId',
+        }),
+        userId,
+        classId: toMongoObjectId({
+          value: classId,
+          key: 'classId',
+        }),
+        isAccept: true,
+        deletedAt: null,
+      });
+      if (findUser.statusCode === 404)
+        return response
+          .status(403)
+          .send({ statusCode: 403, message: 'Permission Denied' });
+      else if (findUser.statusCode !== 200)
+        return response.status(findUser.statusCode).send(findUser);
+    }
 
     // find class has meeting schedule id
     const mtResponse = await this.classHasMeetingScheduleService.findOne({
@@ -183,12 +207,34 @@ export class MeetingScheduleController {
     @Res() response,
   ) {
     const { _id: userId } = request.user;
+    const { role } = request;
     if (!userId)
       return response
         .status(403)
         .send({ statusCode: 403, message: 'Permission Denied' });
+
     // เช็ค project กับ userId ว่ามีสามารถเข้าถึงได้มั๊ยกรณีเป็น student กับ advisor
-    // ไว้กลับมาทำหลัง สร้าง table project_has_user
+    if (!role.find((e) => e === 2)) {
+      const findUser = await this.projectHasUserService.findOne({
+        projectId: toMongoObjectId({
+          value: projectId,
+          key: 'projectId',
+        }),
+        userId,
+        classId: toMongoObjectId({
+          value: classId,
+          key: 'classId',
+        }),
+        isAccept: true,
+        deletedAt: null,
+      });
+      if (findUser.statusCode === 404)
+        return response
+          .status(403)
+          .send({ statusCode: 403, message: 'Permission Denied' });
+      else if (findUser.statusCode !== 200)
+        return response.status(findUser.statusCode).send(findUser);
+    }
 
     // find class has meeting schedule
     const classHasMeetingSchedules =
@@ -280,8 +326,24 @@ export class MeetingScheduleController {
       return response
         .status(403)
         .send({ statusCode: 403, message: 'Permission Denied' });
-    // เช็ค project กับ userId ว่ามีสามารถเข้าถึงได้มั๊ยกรณีเป็น student กับ advisor
-    // ไว้กลับมาทำหลัง สร้าง table project_has_user
+
+    // เช็ค project กับ userId ว่ามีสามารถเข้าถึงได้มั๊ยกรณีเป็น student
+    const findUser = await this.projectHasUserService.findOne({
+      projectId: toMongoObjectId({
+        value: projectId,
+        key: 'projectId',
+      }),
+      userId,
+      isAccept: true,
+      deletedAt: null,
+      role: { $in: [0, 1] }, //owner or partner
+    });
+    if (findUser.statusCode === 404)
+      return response
+        .status(403)
+        .send({ statusCode: 403, message: 'Permission Denied' });
+    else if (findUser.statusCode !== 200)
+      return response.status(findUser.statusCode).send(findUser);
 
     const { detail } = body;
     const res = await this.projectSendMeetingSchedulService.createOrUpdate({
@@ -291,6 +353,7 @@ export class MeetingScheduleController {
         key: 'meetingScheduleId',
       }),
       detail,
+      status: false,
     });
     response.status(res.statusCode).send(res);
   }
@@ -351,8 +414,24 @@ export class MeetingScheduleController {
       return response
         .status(403)
         .send({ statusCode: 403, message: 'Permission Denied' });
-    // เช็ค project กับ userId ว่ามีสามารถเข้าถึงได้มั๊ยกรณีเป็น student กับ advisor
-    // ไว้กลับมาทำหลัง สร้าง table project_has_user
+
+    // เช็ค project กับ userId ว่ามีสามารถเข้าถึงได้มั๊ยกรณีเป็น advisor
+    const findUser = await this.projectHasUserService.findOne({
+      projectId: toMongoObjectId({
+        value: projectId,
+        key: 'projectId',
+      }),
+      userId,
+      isAccept: true,
+      deletedAt: null,
+      role: 2, //advisor
+    });
+    if (findUser.statusCode === 404)
+      return response
+        .status(403)
+        .send({ statusCode: 403, message: 'Permission Denied' });
+    else if (findUser.statusCode !== 200)
+      return response.status(findUser.statusCode).send(findUser);
 
     const { status } = body;
     const res = await this.projectSendMeetingSchedulService.createOrUpdate({
@@ -384,8 +463,24 @@ export class MeetingScheduleController {
       return response
         .status(403)
         .send({ statusCode: 403, message: 'Permission Denied' });
-    // เช็ค project กับ userId ว่ามีสามารถเข้าถึงได้มั๊ยกรณีเป็น student กับ advisor
-    // ไว้กลับมาทำหลัง สร้าง table project_has_user
+
+    // เช็ค project กับ userId ว่ามีสามารถเข้าถึงได้มั๊ยกรณีเป็น student
+    const findUser = await this.projectHasUserService.findOne({
+      projectId: toMongoObjectId({
+        value: projectId,
+        key: 'projectId',
+      }),
+      userId,
+      isAccept: true,
+      deletedAt: null,
+      role: { $in: [0, 1] }, //owner or partner
+    });
+    if (findUser.statusCode === 404)
+      return response
+        .status(403)
+        .send({ statusCode: 403, message: 'Permission Denied' });
+    else if (findUser.statusCode !== 200)
+      return response.status(findUser.statusCode).send(findUser);
 
     const res = await this.projectSendMeetingSchedulService.delete({
       projectId,

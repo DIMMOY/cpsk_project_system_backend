@@ -71,6 +71,29 @@ export class UserService {
     }
   }
 
+  async list(sort: string | null, filter: any): Promise<ResponsePattern> {
+    try {
+      const typeSort = {
+        createdAtASC: { createdAt: 1 },
+        createdAtDESC: { createdAt: -1 },
+        name: { name: 1 },
+      };
+
+      const sortSelect =
+        sort && typeSort[sort] ? typeSort[sort] : { createdAt: -1 };
+
+      const data = await this.userModel
+        .find(filter, null, {
+          sort: sortSelect,
+        })
+        .populate('classId');
+      return { statusCode: 200, message: 'List Project Successful', data };
+    } catch (error) {
+      console.log(error);
+      return { statusCode: 400, message: 'List Project Error', error };
+    }
+  }
+
   async findOne(filter: any): Promise<ResponsePattern> {
     try {
       const data = await this.userModel.findOne(filter);

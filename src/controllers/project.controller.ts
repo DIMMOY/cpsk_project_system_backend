@@ -9,6 +9,7 @@ import {
   Put,
   Req,
 } from '@nestjs/common';
+import { request } from 'http';
 import { Types } from 'mongoose';
 import { ProjectCreateDto } from 'src/dto/project.dto';
 import { ClassService } from 'src/services/class.service';
@@ -92,12 +93,100 @@ export class ProjectController {
   async listProjectInClass(
     @Param('classId') classId: string,
     @Query('sort') sort: string,
+    @Query('matchCommitteeId') matchCommitteeId: string,
+    @Req() request,
     @Res() response,
   ) {
-    const res = await this.projectService.list(sort, {
+    const { role } = request;
+
+    const projects = await this.projectService.list(sort, {
       classId: toMongoObjectId({ value: classId, key: 'classId' }),
+      deletedAt: null,
     });
-    response.status(res.statusCode).send(res);
+    if (projects.statusCode !== 200)
+      return response.status(projects.statusCode).send(projects);
+
+    const projectsOb = {};
+    projects.data.forEach((project) => {
+      projectsOb[project._id] = {
+        ...project._doc,
+        student: [],
+        advisor: [],
+        committeeGroupId: null,
+        committee: [],
+      };
+    });
+
+    const projectHasUsers = await this.projectHasUserService.list({
+      classId: toMongoObjectId({ value: classId, key: 'classId' }),
+      deletedAt: null,
+      isAccept: true,
+    });
+    if (projectHasUsers.statusCode !== 200)
+      return response.status(projectHasUsers.statusCode).send(projectHasUsers);
+
+    projectHasUsers.data.forEach((projectHasUser) => {
+      if (projectHasUser.role === 0 || projectHasUser.role === 1) {
+        projectsOb[projectHasUser.projectId].student.push(
+          projectHasUser.userId,
+        );
+      } else if (projectHasUser.role === 2) {
+        projectsOb[projectHasUser.projectId].advisor.push(
+          projectHasUser.userId,
+        );
+      } else {
+        // role 3 (committee) will have matchCommitteId in projectHasUser table
+        if (matchCommitteeId) {
+          if (
+            matchCommitteeId === projectHasUser.matchCommitteeId._id.toString()
+          ) {
+            projectsOb[projectHasUser.projectId].committee.push(
+              projectHasUser.userId,
+            );
+            projectsOb[projectHasUser.projectId].committeeGroupId =
+              projectHasUser.matchCommitteeHasGroupId;
+          }
+        } else {
+          projectsOb[projectHasUser.projectId].committee.push(
+            projectHasUser.userId,
+          );
+        }
+      }
+    });
+
+    const result: any = Object.values(projectsOb);
+    if (sort === 'advisor') {
+      result.sort((a, b) => {
+        if (!a.advisor.length) {
+          return 1;
+        } else if (!b.advisor.length) {
+          return 1;
+        } else {
+          return a.advisor[0].displayName.localeCompare(
+            b.advisor[0].displayName,
+          );
+        }
+      });
+    } else if (sort === 'committee' && matchCommitteeId) {
+      result.sort((a, b) => {
+        if (!a.committeeGroupId) {
+          return 1;
+        } else if (!b.committeeGroupId) {
+          return 1;
+        } else {
+          return a.committeeGroupId.createdAt.getTime() <
+            b.committeeGroupId.createdAt.getTime()
+            ? -1
+            : 1;
+        }
+      });
+    }
+
+    response.status(projects.statusCode).send({
+      statusCode: projects.statusCode,
+      message: projects.message,
+      data: result,
+    });
   }
 
   @Get(`class/:classId/${defaultPath}/:projectId`)
@@ -136,7 +225,7 @@ export class ProjectController {
     } else {
       const project = await this.projectService.findOne({
         classId: toMongoObjectId({ value: classId, key: 'classId' }),
-        projectId: toMongoObjectId({ value: projectId, key: 'projectId' }),
+        _id: toMongoObjectId({ value: projectId, key: 'projectId' }),
         deletedAt: null,
       });
       response.status(project.statusCode).send(project);

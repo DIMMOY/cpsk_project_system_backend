@@ -26,7 +26,10 @@ export class ProjectHasUserService {
     try {
       const data = await this.projectHasUserModel
         .find(filter)
-        .select(select ? select : {});
+        .select(select ? select : {})
+        .populate('userId')
+        .populate('matchCommitteeId')
+        .populate('matchCommitteeHasGroupId');
       return {
         statusCode: 200,
         message: 'List ProjectHasUser Successful',
@@ -59,6 +62,30 @@ export class ProjectHasUserService {
     } catch (error) {
       console.log(error);
       return { statusCode: 400, message: 'Find ProjectHasUser Error', error };
+    }
+  }
+
+  async insertMany(body): Promise<ResponsePattern> {
+    try {
+      await this.projectHasUserModel.insertMany(body);
+      return { statusCode: 201, message: 'Create ProjectHasUser Successful' };
+    } catch (error) {
+      console.error(error);
+      return { statusCode: 400, message: 'Create ProjectHasUser Error', error };
+    }
+  }
+
+  async deleteMany(filter): Promise<ResponsePattern> {
+    try {
+      await this.projectHasUserModel.updateMany(
+        filter,
+        { deletedAt: new Date() },
+        { timestamps: true },
+      );
+      return { statusCode: 200, message: 'Delete Document Successful' };
+    } catch (error) {
+      console.error(error);
+      return { statusCode: 400, message: 'Delete Document Error', error };
     }
   }
 }
