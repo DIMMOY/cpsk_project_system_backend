@@ -48,6 +48,9 @@ export class IsAdminOrAdvisorMiddleware implements NestMiddleware {
 
       request.user = userData.data;
       request.role = userHasRoleData.data.map((e) => e.role);
+      request.currentRole = userHasRoleData.data.find((e) => e.currentRole)
+        ? userHasRoleData.data.find((e) => e.currentRole).role
+        : null;
 
       next();
     } catch (error) {

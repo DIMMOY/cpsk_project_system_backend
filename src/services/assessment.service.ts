@@ -26,7 +26,7 @@ export class AssessmentService {
     }
   }
 
-  async list(sort: string | null): Promise<ResponsePattern> {
+  async list(sort: string | null, filter: any): Promise<ResponsePattern> {
     try {
       const typeSort = {
         createdAtASC: { createdAt: 1 },
@@ -36,7 +36,7 @@ export class AssessmentService {
       const sortSelect =
         sort && typeSort[sort] ? typeSort[sort] : { createdAt: -1 };
 
-      const data = await this.assesssmentModel.find({}, null, {
+      const data = await this.assesssmentModel.find(filter, null, {
         sort: sortSelect,
       });
 

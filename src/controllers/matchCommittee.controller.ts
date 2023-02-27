@@ -11,7 +11,11 @@ import {
   Res,
   Req,
 } from '@nestjs/common';
-import { MatchCommitteeCreateDto } from 'src/dto/matchCommittee.dto';
+import {
+  MatchCommitteeCreateDto,
+  MatchCommitteeSetDateDto,
+  MatchCommitteeSetStatusDto,
+} from 'src/dto/matchCommittee.dto';
 import {
   MatchCommitteeHasGroupCreateDto,
   MatchCommitteeHasGroupCreateWithProjectDto,
@@ -184,19 +188,7 @@ export class MatchCommitteeController {
         .status(404)
         .send({ statusCode: 404, message: 'Project Not Found' });
 
-    // delete old committee
-    const deleteOldCommittee = await this.projectHasUserService.deleteMany({
-      projectId: { $in: createInGroup },
-      deletedAt: null,
-      role: 3,
-      matchCommitteeId: mCommitteeId,
-    });
-    if (deleteOldCommittee.statusCode !== 200)
-      return response
-        .status(deleteOldCommittee.statusCode)
-        .send(deleteOldCommittee);
-
-    // delete in project in group
+    // delete project in group
     if (deleteInGroup.length) {
       const deleteProjectInGroup = await this.projectHasUserService.deleteMany({
         projectId: { $in: deleteInGroup },
@@ -210,8 +202,20 @@ export class MatchCommitteeController {
           .send(deleteProjectInGroup);
     }
 
-    // add new committee
     if (createInGroup.length) {
+      // delete old committee
+      const deleteOldCommittee = await this.projectHasUserService.deleteMany({
+        projectId: { $in: createInGroup },
+        deletedAt: null,
+        role: 3,
+        matchCommitteeId: mCommitteeId,
+      });
+      if (deleteOldCommittee.statusCode !== 200)
+        return response
+          .status(deleteOldCommittee.statusCode)
+          .send(deleteOldCommittee);
+
+      // add new committee
       const userCommittee = findMatchCommitteeHasGroup.data.userId;
       const addNewCommittee = await this.projectHasUserService.insertMany(
         createInGroup.flatMap((id) =>
@@ -254,12 +258,24 @@ export class MatchCommitteeController {
   async listeMatchCommitteeInClass(
     @Param('classId') classId: string,
     @Query('sort') sort: string,
+    @Req() request,
     @Res() response,
   ) {
-    const res = await this.matchCommitteeService.list(sort, {
-      classId: toMongoObjectId({ value: classId, key: 'classId' }),
-      deletedAt: null,
-    });
+    const { role, currentRole } = request;
+
+    // if not admin or current role is advisor
+    let res;
+    if (!role.find((e) => e === 2) || currentRole === 1) {
+      res = await this.matchCommitteeService.list(sort, {
+        classId: toMongoObjectId({ value: classId, key: 'classId' }),
+        deletedAt: null,
+      });
+    } else {
+      res = await this.matchCommitteeService.list(sort, {
+        classId: toMongoObjectId({ value: classId, key: 'classId' }),
+        deletedAt: null,
+      });
+    }
     response.status(res.statusCode).send(res);
   }
 
@@ -303,6 +319,48 @@ export class MatchCommitteeController {
         committeeGroup: committeeGroupData.data,
       },
     };
+    response.status(res.statusCode).send(res);
+  }
+
+  @Put(`class/:classId/${defaultPath}/:committeeId/date`)
+  async setDateMeetingScheduleInClass(
+    @Param('classId') classId: string,
+    @Param('committeeId') committeeId: string,
+    @Body() body: MatchCommitteeSetDateDto,
+    @Res() response,
+  ) {
+    const res = await this.matchCommitteeService.update(
+      {
+        _id: toMongoObjectId({ value: committeeId, key: 'committeeId' }),
+        classId: toMongoObjectId({ value: classId, key: 'classId' }),
+        deletedAt: null,
+      },
+      {
+        ...body,
+        status: true,
+      },
+    );
+    response.status(res.statusCode).send(res);
+  }
+
+  @Patch(`class/:classId/${defaultPath}/:committeeId/date/status`)
+  async changeMeetingScheduleInClass(
+    @Param('classId') classId: string,
+    @Param('committeeId') committeeId: string,
+    @Body() body: MatchCommitteeSetStatusDto,
+    @Res() response,
+  ) {
+    const res = await this.matchCommitteeService.update(
+      {
+        _id: toMongoObjectId({ value: committeeId, key: 'committeeId' }),
+        classId: toMongoObjectId({ value: classId, key: 'classId' }),
+        deletedAt: null,
+      },
+      {
+        ...body,
+        startDate: null,
+      },
+    );
     response.status(res.statusCode).send(res);
   }
 }

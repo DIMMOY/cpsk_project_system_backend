@@ -21,6 +21,7 @@ import { ClassSchema } from 'src/schema/class.schema';
 import { ClassService } from 'src/services/class.service';
 import { ProjectSchema } from 'src/schema/project.schema';
 import { ProjectService } from 'src/services/project.service';
+import { IsAdminOrAdvisorMiddleware } from 'src/middleware/isAdminOrAdvisor.middleware';
 
 @Module({
   imports: [
@@ -68,6 +69,18 @@ export class MatchCommitteeModule implements NestModule {
         path: 'class/:classId/committee',
         method: RequestMethod.GET,
       },
+      {
+        path: 'class/:classId/committee/:committeeId/date',
+        method: RequestMethod.PUT,
+      },
+      {
+        path: 'class/:classId/committee/:committeeId/date/status',
+        method: RequestMethod.PATCH,
+      },
     );
+    consumer.apply(IsAdminOrAdvisorMiddleware).forRoutes({
+      path: 'class/:classId/committee/:committeeId/group',
+      method: RequestMethod.GET,
+    });
   }
 }

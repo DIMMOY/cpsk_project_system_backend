@@ -9,6 +9,12 @@ export class MatchCommittee {
   @Prop({ required: true, type: Types.ObjectId, ref: 'class' })
   classId: Types.ObjectId;
 
+  @Prop({ default: false })
+  status: boolean;
+
+  @Prop({ default: null })
+  startDate: Date;
+
   @Prop({ default: null })
   deletedAt: Date;
 

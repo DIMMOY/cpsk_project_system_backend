@@ -11,6 +11,7 @@ import {
   Res,
   Req,
 } from '@nestjs/common';
+import { request } from 'http';
 import { Types } from 'mongoose';
 import {
   ClassHasMeetingScheduleBodyDto,
@@ -43,7 +44,9 @@ export class MeetingScheduleController {
 
   @Get(defaultPath)
   async listMeetingSchedule(@Query('sort') sort: string, @Res() response) {
-    const res = await this.meetingScheduleService.list(sort, {});
+    const res = await this.meetingScheduleService.list(sort, {
+      deletedAt: null,
+    });
     response.status(res.statusCode).send(res);
   }
 
@@ -52,8 +55,16 @@ export class MeetingScheduleController {
     @Param('classId') classId: string,
     @Query('sort') sort: string,
     @Query('status') status: string,
+    @Req() request,
     @Res() response,
   ) {
+    const { role } = request;
+    // if not admin, can find only status is true
+    if (!role.find((e) => e === 2) && status !== 'true')
+      return response
+        .status(403)
+        .send({ statusCode: 403, message: 'Permission Denied' });
+
     // list all meeting schedules
     const meetingSchedules = await this.meetingScheduleService.list(sort, {
       deletedAt: null,

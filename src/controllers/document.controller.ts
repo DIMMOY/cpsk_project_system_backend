@@ -37,7 +37,7 @@ export class DocumentController {
 
   @Get(defaultPath)
   async listDocument(@Query('sort') sort: string, @Res() response) {
-    const res = await this.documentService.list(sort, {});
+    const res = await this.documentService.list(sort, { deletedAt: null });
     response.status(res.statusCode).send(res);
   }
 
@@ -46,8 +46,16 @@ export class DocumentController {
     @Param('classId') classId: string,
     @Query('sort') sort: string,
     @Query('status') status: string,
+    @Req() request,
     @Res() response,
   ) {
+    const { role } = request;
+    // if not admin, can find only status is true
+    if (!role.find((e) => e === 2) && status !== 'true')
+      return response
+        .status(403)
+        .send({ statusCode: 403, message: 'Permission Denied' });
+
     const documents = await this.documentService.list(sort, {
       deletedAt: null,
     });

@@ -12,7 +12,7 @@ import { toMongoObjectId } from 'src/utils/mongoDB.utils';
 
 export class ProjectCreateDto {
   @IsString()
-  @Matches(/^[\u0E00-\u0E7F 0-9(),.-]*$/)
+  @Matches(/^[\u0E00-\u0E7F A-Za-z 0-9(),.-]*$/)
   nameTH: string;
 
   @IsString()

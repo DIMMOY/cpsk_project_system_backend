@@ -79,4 +79,20 @@ export class MatchCommitteeService {
       };
     }
   }
+
+  async update(filter, body): Promise<ResponsePattern> {
+    try {
+      await this.matchCommitteeModel.updateMany(filter, body, {
+        runValidators: true,
+      });
+      return { statusCode: 200, message: 'Update Match Committee Successful' };
+    } catch (error) {
+      console.error(error);
+      return {
+        statusCode: 400,
+        message: 'Update Match Committee Error',
+        error,
+      };
+    }
+  }
 }

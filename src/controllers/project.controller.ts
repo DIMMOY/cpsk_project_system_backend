@@ -94,10 +94,12 @@ export class ProjectController {
     @Param('classId') classId: string,
     @Query('sort') sort: string,
     @Query('matchCommitteeId') matchCommitteeId: string,
+    @Query('role') roleInProject: string,
     @Req() request,
     @Res() response,
   ) {
-    const { role } = request;
+    const { _id: userId } = request.user;
+    const { role, currentRole } = request;
 
     const projects = await this.projectService.list(sort, {
       classId: toMongoObjectId({ value: classId, key: 'classId' }),
@@ -106,53 +108,118 @@ export class ProjectController {
     if (projects.statusCode !== 200)
       return response.status(projects.statusCode).send(projects);
 
-    const projectsOb = {};
-    projects.data.forEach((project) => {
-      projectsOb[project._id] = {
-        ...project._doc,
-        student: [],
-        advisor: [],
-        committeeGroupId: null,
-        committee: [],
-      };
-    });
+    const projectsOb: any = {};
+    let filter;
 
-    const projectHasUsers = await this.projectHasUserService.list({
-      classId: toMongoObjectId({ value: classId, key: 'classId' }),
-      deletedAt: null,
-      isAccept: true,
-    });
-    if (projectHasUsers.statusCode !== 200)
-      return response.status(projectHasUsers.statusCode).send(projectHasUsers);
-
-    projectHasUsers.data.forEach((projectHasUser) => {
-      if (projectHasUser.role === 0 || projectHasUser.role === 1) {
-        projectsOb[projectHasUser.projectId].student.push(
-          projectHasUser.userId,
-        );
-      } else if (projectHasUser.role === 2) {
-        projectsOb[projectHasUser.projectId].advisor.push(
-          projectHasUser.userId,
-        );
+    // if not admin
+    if (!role.find((e) => e === 2) || currentRole === 1) {
+      let projectHasUsers;
+      if (roleInProject === 'advisor') {
+        projectHasUsers = await this.projectHasUserService.list({
+          role: 2,
+          userId,
+          classId: toMongoObjectId({ value: classId, key: 'classId' }),
+          deletedAt: null,
+        });
+        if (projectHasUsers.statusCode !== 200)
+          return response
+            .status(projectHasUsers.statusCode)
+            .send(projectHasUsers);
+      } else if (roleInProject === 'committee') {
+        projectHasUsers = await this.projectHasUserService.list({
+          role: 3,
+          userId,
+          classId: toMongoObjectId({ value: classId, key: 'classId' }),
+          matchCommitteeId: toMongoObjectId({
+            value: matchCommitteeId,
+            key: 'matchCommitteeId',
+          }),
+          deletedAt: null,
+        });
+        if (projectHasUsers.statusCode !== 200)
+          return response
+            .status(projectHasUsers.statusCode)
+            .send(projectHasUsers);
       } else {
-        // role 3 (committee) will have matchCommitteId in projectHasUser table
-        if (matchCommitteeId) {
-          if (
-            matchCommitteeId === projectHasUser.matchCommitteeId._id.toString()
-          ) {
+        return response
+          .status(404)
+          .send({ statusCode: 404, message: 'Query Not Found' });
+      }
+      projects.data
+        .filter((project) =>
+          projectHasUsers.data.find(
+            (p) => p.projectId.toString() === project._id.toString(),
+          ),
+        )
+        .forEach((project) => {
+          projectsOb[project._id] = {
+            ...project._doc,
+            student: [],
+            advisor: [],
+            committeeGroupId: null,
+            committee: [],
+          };
+        });
+      filter = {
+        classId: toMongoObjectId({ value: classId, key: 'classId' }),
+        deletedAt: null,
+        isAccept: true,
+        projectId: { $in: [projects.data.map((project) => project._id)] },
+      };
+    } else {
+      projects.data.forEach((project) => {
+        projectsOb[project._id] = {
+          ...project._doc,
+          student: [],
+          advisor: [],
+          committeeGroupId: null,
+          committee: [],
+        };
+      });
+      filter = {
+        classId: toMongoObjectId({ value: classId, key: 'classId' }),
+        deletedAt: null,
+        isAccept: true,
+      };
+    }
+
+    if (Object.values(projectsOb).length) {
+      const projectHasUsers = await this.projectHasUserService.list(filter);
+      if (projectHasUsers.statusCode !== 200)
+        return response
+          .status(projectHasUsers.statusCode)
+          .send(projectHasUsers);
+
+      projectHasUsers.data.forEach((projectHasUser) => {
+        if (projectHasUser.role === 0 || projectHasUser.role === 1) {
+          projectsOb[projectHasUser.projectId].student.push(
+            projectHasUser.userId,
+          );
+        } else if (projectHasUser.role === 2) {
+          projectsOb[projectHasUser.projectId].advisor.push(
+            projectHasUser.userId,
+          );
+        } else {
+          // role 3 (committee) will have matchCommitteId in projectHasUser table
+          if (matchCommitteeId) {
+            if (
+              matchCommitteeId ===
+              projectHasUser.matchCommitteeId._id.toString()
+            ) {
+              projectsOb[projectHasUser.projectId].committee.push(
+                projectHasUser.userId,
+              );
+              projectsOb[projectHasUser.projectId].committeeGroupId =
+                projectHasUser.matchCommitteeHasGroupId;
+            }
+          } else {
             projectsOb[projectHasUser.projectId].committee.push(
               projectHasUser.userId,
             );
-            projectsOb[projectHasUser.projectId].committeeGroupId =
-              projectHasUser.matchCommitteeHasGroupId;
           }
-        } else {
-          projectsOb[projectHasUser.projectId].committee.push(
-            projectHasUser.userId,
-          );
         }
-      }
-    });
+      });
+    }
 
     const result: any = Object.values(projectsOb);
     if (sort === 'advisor') {

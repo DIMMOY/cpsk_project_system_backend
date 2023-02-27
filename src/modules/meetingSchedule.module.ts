@@ -8,6 +8,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { MeetingScheduleController } from 'src/controllers/meetingschedule.controller';
 import { AuthMiddleware } from 'src/middleware/auth.middleware';
 import { IsAdminMiddleware } from 'src/middleware/isAdmin.middleware';
+import { IsAdminOrAdvisorMiddleware } from 'src/middleware/isAdminOrAdvisor.middleware';
 import { IsAdvisorMiddleware } from 'src/middleware/isAdvisor.middleware';
 import { IsStudentMiddleware } from 'src/middleware/isStudent.middleware';
 import { ClassHasMeetingScheduleSchema } from 'src/schema/classHasMeetingSchedule.schema';
@@ -62,7 +63,6 @@ export class MeetingScheduleModule implements NestModule {
     consumer.apply(IsAdminMiddleware).forRoutes(
       { path: 'meeting-schedule', method: RequestMethod.POST },
       { path: 'meeting-schedule', method: RequestMethod.GET },
-      { path: 'class/:classId/meeting-schedule', method: RequestMethod.GET },
       { path: 'meeting-schedule/:mtId', method: RequestMethod.PUT },
       {
         path: 'class/:classId/meeting-schedule/:mtId/date',
@@ -74,6 +74,10 @@ export class MeetingScheduleModule implements NestModule {
       },
       { path: 'meeting-schedule', method: RequestMethod.DELETE },
     );
+    consumer.apply(IsAdminOrAdvisorMiddleware).forRoutes({
+      path: 'class/:classId/meeting-schedule',
+      method: RequestMethod.GET,
+    });
     consumer.apply(IsAdvisorMiddleware).forRoutes({
       path: 'project/:projectId/meeting-schedule/:mtId',
       method: RequestMethod.PATCH,

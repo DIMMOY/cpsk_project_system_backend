@@ -8,6 +8,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { DocumentController } from 'src/controllers/document.controller';
 import { AuthMiddleware } from 'src/middleware/auth.middleware';
 import { IsAdminMiddleware } from 'src/middleware/isAdmin.middleware';
+import { IsAdminOrAdvisorMiddleware } from 'src/middleware/isAdminOrAdvisor.middleware';
 import { IsStudentMiddleware } from 'src/middleware/isStudent.middleware';
 import { ClassHasDocumentSchema } from 'src/schema/classHasDocument.schema';
 import { DocumentSchema } from 'src/schema/document.schema';
@@ -55,7 +56,6 @@ export class DocumentModule implements NestModule {
     consumer.apply(IsAdminMiddleware).forRoutes(
       { path: 'document', method: RequestMethod.POST },
       { path: 'document', method: RequestMethod.GET },
-      { path: 'class/:classId/document', method: RequestMethod.GET },
       { path: 'document/:id', method: RequestMethod.PUT },
       {
         path: 'class/:classId/document/:documentId/date',
@@ -67,6 +67,10 @@ export class DocumentModule implements NestModule {
       },
       { path: 'document/:documentId', method: RequestMethod.DELETE },
     );
+    consumer.apply(IsAdminOrAdvisorMiddleware).forRoutes({
+      path: 'class/:classId/document',
+      method: RequestMethod.GET,
+    });
     consumer.apply(IsStudentMiddleware).forRoutes(
       {
         path: 'project/:projectId/document/:documentId',

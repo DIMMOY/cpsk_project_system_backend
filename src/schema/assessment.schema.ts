@@ -39,6 +39,9 @@ export class Assessment {
   @Prop({ required: true })
   autoCalculate: boolean;
 
+  // 0 = all
+  // 1 = advisor
+  // 2 = committee
   @Prop({ required: true })
   assessBy: number;
 
