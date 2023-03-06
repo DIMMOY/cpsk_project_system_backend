@@ -10,11 +10,13 @@ import { IsAdminMiddleware } from 'src/middleware/isAdmin.middleware';
 import { IsAdminOrAdvisorMiddleware } from 'src/middleware/isAdminOrAdvisor.middleware';
 import { AssessmentSchema } from 'src/schema/assessment.schema';
 import { ClassHasAssessmentSchema } from 'src/schema/classHasAssessment.schema';
+import { ProjectSchema } from 'src/schema/project.schema';
 import { ProjectHasUserSchema } from 'src/schema/projectHasUser.schema';
 import { UserSchema } from 'src/schema/user.schema';
 import { UserHasRoleSchema } from 'src/schema/userHasRole.schema';
 import { AssessmentService } from 'src/services/assessment.service';
 import { ClassHasAssessmentService } from 'src/services/classHasAssessment.service';
+import { ProjectService } from 'src/services/project.service';
 import { ProjectHasUserService } from 'src/services/projectHasUser.service';
 import { UserService } from 'src/services/user.service';
 import { UserHasRoleService } from 'src/services/userHasRole.service';
@@ -27,6 +29,7 @@ import { UserHasRoleService } from 'src/services/userHasRole.service';
       { name: 'user_has_role', schema: UserHasRoleSchema },
       { name: 'class_has_assessment', schema: ClassHasAssessmentSchema },
       { name: 'project_has_user', schema: ProjectHasUserSchema },
+      { name: 'project', schema: ProjectSchema },
     ]),
   ],
   controllers: [AssessmentController],
@@ -36,6 +39,7 @@ import { UserHasRoleService } from 'src/services/userHasRole.service';
     UserHasRoleService,
     ProjectHasUserService,
     ClassHasAssessmentService,
+    ProjectService,
   ],
   exports: [AssessmentService],
 })
@@ -54,9 +58,15 @@ export class AssessmentModule implements NestModule {
         method: RequestMethod.PATCH,
       },
     );
-    consumer.apply(IsAdminOrAdvisorMiddleware).forRoutes({
-      path: 'class/:classId/assessment',
-      method: RequestMethod.GET,
-    });
+    consumer.apply(IsAdminOrAdvisorMiddleware).forRoutes(
+      {
+        path: 'class/:classId/assessment',
+        method: RequestMethod.GET,
+      },
+      {
+        path: 'class/:classId/assessment/:assessmentId/project/:projectId',
+        method: RequestMethod.GET,
+      },
+    );
   }
 }

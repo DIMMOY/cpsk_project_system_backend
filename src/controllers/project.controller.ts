@@ -11,10 +11,12 @@ import {
 } from '@nestjs/common';
 import { request } from 'http';
 import { Types } from 'mongoose';
-import { ProjectCreateDto } from 'src/dto/project.dto';
+import { ProjectCreateDto as ProjectUpdateDto } from 'src/dto/project.dto';
 import { ClassService } from 'src/services/class.service';
 import { ProjectService } from 'src/services/project.service';
 import { ProjectHasUserService } from 'src/services/projectHasUser.service';
+import { UserService } from 'src/services/user.service';
+import { UserHasRoleService } from 'src/services/userHasRole.service';
 import { UserJoinClassService } from 'src/services/userJoinClass.service';
 import { toMongoObjectId } from 'src/utils/mongoDB.utils';
 
@@ -27,12 +29,13 @@ export class ProjectController {
     private readonly projectHasUserService: ProjectHasUserService,
     private readonly classService: ClassService,
     private readonly userJoinClassService: UserJoinClassService,
+    private readonly userHasRoleService: UserHasRoleService,
   ) {}
 
   @Post(`class/:classId/${defaultPath}`)
   async createProject(
     @Param('classId') classId: Types.ObjectId,
-    @Body() reqBody: ProjectCreateDto,
+    @Body() reqBody: ProjectUpdateDto,
     @Req() request,
     @Res() response,
   ) {
@@ -44,11 +47,11 @@ export class ProjectController {
         .status(403)
         .send({ statusCode: 403, message: 'Permission Denied' });
 
-    if (partners.filter((v) => v.toString() === userId.toString()).length) {
-      return response
-        .status(400)
-        .send({ statusCode: 400, message: 'Owner And Partner Has Same Id' });
-    }
+    // if (partners.filter((v) => v.toString() === userId.toString()).length) {
+    //   return response
+    //     .status(400)
+    //     .send({ statusCode: 400, message: 'Owner And Partner Has Same Id' });
+    // }
 
     // find class has user
     classId = toMongoObjectId({ value: classId, key: 'classId' });
@@ -66,11 +69,27 @@ export class ProjectController {
         .send({ statusCode: 404, message: 'User In Class Not Found' });
     }
 
+    // find advisor
+    const findAdvisor = await this.userHasRoleService.list({
+      userId: { $in: advisors },
+      deletedAt: null,
+      role: 1,
+    });
+    if (findAdvisor.statusCode !== 200) {
+      return response.status(findAdvisor.statusCode).send(findAdvisor);
+    }
+    if (findAdvisor.data.length !== advisors.length) {
+      return response
+        .status(404)
+        .send({ statusCode: 404, message: 'Advisor Not Found' });
+    }
+
     // find user not in other project
     const findUser = await this.projectHasUserService.list({
       userId,
       classId,
       deletedAt: null,
+      role: { $in: [0, 1] },
     });
     if (findUser.statusCode !== 200) {
       return response.status(findUser.statusCode).send(findUser);
@@ -317,7 +336,36 @@ export class ProjectController {
       deletedAt: null,
       role: { $in: [0, 1] },
     });
-    response.status(res.statusCode).send(res);
+    if (res.statusCode !== 200)
+      return response.status(res.statusCode).send(res);
+
+    const projectData = res.data.projectId;
+    const { _id: projectId } = projectData;
+    const advisorsAndPartners = await this.projectHasUserService.list({
+      classId: toMongoObjectId({ value: classId, key: 'classId' }),
+      projectId,
+      deletedAt: null,
+    });
+    if (advisorsAndPartners.statusCode !== 200)
+      return response
+        .status(advisorsAndPartners.statusCode)
+        .send(advisorsAndPartners);
+
+    const advisors = advisorsAndPartners.data
+      .filter((e) => e.role === 2)
+      .map((e) => e.userId);
+    const partners = advisorsAndPartners.data
+      .filter(
+        (e) =>
+          (e.role === 0 || e.role === 1) &&
+          e.userId._id.toString() !== userId.toString(),
+      )
+      .map((e) => e.userId);
+    response.status(res.statusCode).send({
+      statusCode: res.statusCode,
+      message: res.message,
+      data: { ...projectData._doc, advisors, partners },
+    });
   }
 
   @Get(`class/:classId/${defaultPath}/:projectId/role`)
@@ -352,7 +400,7 @@ export class ProjectController {
   async updateProject(
     @Param('classId') classId: Types.ObjectId,
     @Param('projectId') projectId: Types.ObjectId,
-    @Body() projectCreateDto: ProjectCreateDto,
+    @Body() reqBody: ProjectUpdateDto,
     @Req() request,
     @Res() response,
   ) {
@@ -362,14 +410,61 @@ export class ProjectController {
         .status(403)
         .send({ statusCode: 403, message: 'Permission Denied' });
 
+    const { partners, advisors } = reqBody;
     classId = toMongoObjectId({ value: classId, key: 'classId' });
     projectId = toMongoObjectId({ value: projectId, key: 'projectId' });
 
-    const res = await this.projectService.create({
-      ...projectCreateDto,
+    // find class has user
+    const findClass = await this.userJoinClassService.list({
+      userId: { $in: [userId, ...partners] },
       classId,
-      userId,
+      deletedAt: null,
     });
+    if (findClass.statusCode !== 200) {
+      return response.status(findClass.statusCode).send(findClass);
+    }
+    if (findClass.data.length !== [userId, ...partners].length) {
+      return response
+        .status(404)
+        .send({ statusCode: 404, message: 'User In Class Not Found' });
+    }
+
+    // check permission
+    const checkPermission = await this.projectHasUserService.findOne({
+      userId,
+      classId,
+      projectId,
+      role: { $in: [0, 1] },
+      deletedAt: null,
+    });
+    if (checkPermission.statusCode !== 200)
+      return response
+        .status(403)
+        .send({ statusCode: 403, message: 'Permission Denied' });
+
+    // find advisor
+    const findAdvisor = await this.userHasRoleService.list({
+      userId: { $in: advisors },
+      deletedAt: null,
+      role: 1,
+    });
+    if (findAdvisor.statusCode !== 200) {
+      return response.status(findAdvisor.statusCode).send(findAdvisor);
+    }
+    if (findAdvisor.data.length !== advisors.length) {
+      return response
+        .status(404)
+        .send({ statusCode: 404, message: 'Advisor Not Found' });
+    }
+
+    const res = await this.projectService.update(
+      {
+        ...reqBody,
+        classId,
+        userId,
+      },
+      projectId,
+    );
     response.status(res.statusCode).send(res);
   }
 }

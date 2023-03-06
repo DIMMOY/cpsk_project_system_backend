@@ -20,6 +20,7 @@ import { DocumentCreateDto, DocumentUpdateDto } from 'src/dto/document.dto';
 import { ProjectSendDocumenteBodyDto } from 'src/dto/projectSendDocument.dto';
 import { ClassHasDocumentService } from 'src/services/classHasDocument.service';
 import { DocumentService } from 'src/services/document.service';
+import { ProjectService } from 'src/services/project.service';
 import { ProjectHasUserService } from 'src/services/projectHasUser.service';
 import { ProjectSendDocumentService } from 'src/services/projectSendDocument.service';
 import { toMongoObjectId } from 'src/utils/mongoDB.utils';
@@ -33,6 +34,7 @@ export class DocumentController {
     private readonly classHasDocumentService: ClassHasDocumentService,
     private readonly projectSendDocumentService: ProjectSendDocumentService,
     private readonly projectHasUserService: ProjectHasUserService,
+    private readonly projectService: ProjectService,
   ) {}
 
   @Get(defaultPath)
@@ -189,6 +191,125 @@ export class DocumentController {
         ...{ sendStatus, startDate, endDate },
         document: documentResponse.data.documentId?._doc,
       },
+    });
+  }
+
+  @Get(`class/:classId/${defaultPath}/overview`)
+  async listProjectSendDocumentInClass(
+    @Param('classId') classId: string | Types.ObjectId,
+    @Query('id') documentId: string | Types.ObjectId,
+    @Query('sort') sort: string,
+    @Req() request,
+    @Res() response,
+  ) {
+    const { _id: userId } = request.user;
+    const { role, currentRole } = request;
+    if (!userId)
+      return response
+        .status(403)
+        .send({ statusCode: 403, message: 'Permission Denied' });
+
+    classId = toMongoObjectId({ value: classId, key: 'classId' });
+
+    let classHasDocumentId = null;
+    let checkDocument;
+    let document = null;
+    if (documentId) {
+      documentId = toMongoObjectId({ value: documentId, key: 'documentId' });
+      checkDocument = await this.classHasDocumentService.findOne({
+        classId,
+        documentId,
+        deletedAt: null,
+        status: true,
+      });
+      if (checkDocument.statusCode !== 200)
+        return response.status(checkDocument.statusCode).send(checkDocument);
+      classHasDocumentId = checkDocument.data._id;
+      document = checkDocument.data.documentId;
+    } else {
+      checkDocument = await this.classHasDocumentService.list('startDateASC', {
+        classId,
+        deletedAt: null,
+        status: true,
+      });
+      if (checkDocument.statusCode !== 200)
+        return response.status(checkDocument.statusCode).send(checkDocument);
+      classHasDocumentId = { $in: checkDocument.data.map((e) => e._id) };
+    }
+
+    const projectsOb: any = {};
+
+    const projects = await this.projectService.list('createdAtDESC', {
+      classId,
+      deletedAt: null,
+    });
+    if (projects.statusCode !== 200)
+      return response.status(projects.statusCode).send(projects);
+
+    // if not admin or current role is advisor
+    let projectHasUsers;
+    if (!role.find((e) => e === 2) || currentRole === 1) {
+      projectHasUsers = await this.projectHasUserService.list({
+        role: 2,
+        userId,
+        classId,
+        deletedAt: null,
+      });
+      if (projectHasUsers.statusCode !== 200)
+        return response
+          .status(projectHasUsers.statusCode)
+          .send(projectHasUsers);
+      projects.data
+        .filter((project) =>
+          projectHasUsers.data.find(
+            (p) => p.projectId.toString() === project._id.toString(),
+          ),
+        )
+        .forEach((project) => {
+          projectsOb[project._id] = {
+            ...project._doc,
+            document: [],
+          };
+        });
+    } else {
+      projects.data.forEach((project) => {
+        projectsOb[project._id] = {
+          ...project._doc,
+          document: [],
+        };
+      });
+    }
+
+    const findSendDocument = await this.projectSendDocumentService.list(
+      'createdAtASC',
+      {
+        classHasDocumentId,
+        deletedAt: null,
+      },
+    );
+    if (findSendDocument.statusCode !== 200)
+      return response
+        .status(findSendDocument.statusCode)
+        .send(findSendDocument);
+
+    findSendDocument.data.forEach((data) => {
+      const sendStatus = data
+        ? data.updatedAt.getTime() <= data.classHasDocumentId.endDate.getTime()
+          ? 1
+          : 2
+        : 0;
+      projectsOb[data.projectId].document.push({
+        _id: data.classHasDocumentId.documentId,
+        sendStatus,
+      });
+    });
+
+    response.status(findSendDocument.statusCode).send({
+      statusCode: findSendDocument.statusCode,
+      message: findSendDocument.message,
+      data: document
+        ? { document, project: Object.values(projectsOb) }
+        : { document: 'all', project: Object.values(projectsOb) },
     });
   }
 

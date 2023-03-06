@@ -11,6 +11,7 @@ import {
   Req,
   Res,
 } from '@nestjs/common';
+import { Types } from 'mongoose';
 import {
   AssessmentCreateDto,
   AssessmentUpdateDto,
@@ -21,6 +22,7 @@ import {
 } from 'src/dto/classHasAssessment.dto';
 import { AssessmentService } from 'src/services/assessment.service';
 import { ClassHasAssessmentService } from 'src/services/classHasAssessment.service';
+import { ProjectService } from 'src/services/project.service';
 import { ProjectHasUserService } from 'src/services/projectHasUser.service';
 import { toMongoObjectId } from 'src/utils/mongoDB.utils';
 
@@ -32,7 +34,46 @@ export class AssessmentController {
     private readonly assessmentService: AssessmentService,
     private readonly classHasAssessmentService: ClassHasAssessmentService,
     private readonly projectHasUserService: ProjectHasUserService,
+    private readonly projectService: ProjectService,
   ) {}
+
+  @Get(`class/:classId/${defaultPath}/:assessmentId/project/:projectId`)
+  async getAssessmentFromProject(
+    @Param('classId') classId: string | Types.ObjectId,
+    @Param('assessmentId') assessmentId: string | Types.ObjectId,
+    @Param('projectId') projectId: string | Types.ObjectId,
+    @Req() request,
+    @Res() response,
+  ) {
+    const { _id: userId } = request.user;
+    const { role } = request;
+
+    if (!userId)
+      return response
+        .status(403)
+        .send({ statusCode: 403, message: 'Permission Denied' });
+
+    classId = toMongoObjectId({ value: classId, key: 'classId' });
+    assessmentId = toMongoObjectId({
+      value: assessmentId,
+      key: 'assessmentId',
+    });
+    projectId = toMongoObjectId({ value: projectId, key: 'projectId' });
+
+    // find project
+    const findProject = await this.projectService.findOne({
+      _id: projectId,
+      classId,
+      deletedAt: null,
+    });
+    if (findProject.statusCode !== 200)
+      return response.status(findProject.statusCode).send(findProject);
+
+    // if not admin
+    // if (!role.find((e) => e === 2)) {
+
+    // }
+  }
 
   @Get(defaultPath)
   async listAssessment(@Query('sort') sort: string, @Res() response) {

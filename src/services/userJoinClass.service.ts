@@ -86,4 +86,64 @@ export class UserJoinClassService {
       };
     }
   }
+
+  async findAndCheckHasProject(
+    filter: any,
+    hasProject: string,
+  ): Promise<ResponsePattern> {
+    try {
+      let data = await this.userJoinClassModel.aggregate([
+        {
+          $lookup: {
+            from: 'project_has_users',
+            localField: 'userId',
+            foreignField: 'userId',
+            as: 'project',
+          },
+        },
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'userId',
+            foreignField: '_id',
+            as: 'user',
+          },
+        },
+        {
+          $match: filter,
+        },
+        {
+          $addFields: {
+            project: {
+              $filter: {
+                input: '$project',
+                as: 'proj',
+                cond: {
+                  $and: [
+                    { $in: ['$$proj.role', [0, 1]] },
+                    { $eq: ['$$proj.deletedAt', null] },
+                    { $eq: ['$$proj.classId', filter.classId] },
+                  ],
+                },
+              },
+            },
+          },
+        },
+      ]);
+      if (hasProject === 'true') data = data.filter((e) => e.project.length);
+      else data = data.filter((e) => !e.project.length);
+      return {
+        statusCode: 200,
+        message: 'List User In Class Successful',
+        data,
+      };
+    } catch (error) {
+      console.log(error);
+      return {
+        statusCode: 400,
+        message: 'List User In Class Error',
+        error,
+      };
+    }
+  }
 }

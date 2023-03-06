@@ -27,6 +27,7 @@ import {
 } from 'src/dto/projectSendMeetingSchedule.dto';
 import { ClassHasMeetingScheduleService } from 'src/services/classHasMeetingSchedule.service';
 import { MeetingScheduleService } from 'src/services/meetingSchedule.service';
+import { ProjectService } from 'src/services/project.service';
 import { ProjectHasUserService } from 'src/services/projectHasUser.service';
 import { ProjectSendMeetingScheduleService } from 'src/services/projectSendMeetingSchedule.service';
 import { toMongoObjectId } from 'src/utils/mongoDB.utils';
@@ -40,6 +41,7 @@ export class MeetingScheduleController {
     private readonly classHasMeetingScheduleService: ClassHasMeetingScheduleService,
     private readonly projectSendMeetingSchedulService: ProjectSendMeetingScheduleService,
     private readonly projectHasUserService: ProjectHasUserService,
+    private readonly projectService: ProjectService,
   ) {}
 
   @Get(defaultPath)
@@ -206,6 +208,134 @@ export class MeetingScheduleController {
         ...{ sendStatus, startDate, endDate },
         meetingSchedule: mtResponse.data.meetingScheduleId?._doc,
       },
+    });
+  }
+
+  @Get(`class/:classId/${defaultPath}/overview`)
+  async listProjectSendMeetingScheduleInClass(
+    @Param('classId') classId: string | Types.ObjectId,
+    @Query('id') mtId: string | Types.ObjectId,
+    @Query('sort') sort: string,
+    @Req() request,
+    @Res() response,
+  ) {
+    const { _id: userId } = request.user;
+    const { role, currentRole } = request;
+    if (!userId)
+      return response
+        .status(403)
+        .send({ statusCode: 403, message: 'Permission Denied' });
+
+    classId = toMongoObjectId({ value: classId, key: 'classId' });
+
+    let classHasMeetingScheduleId = null;
+    let checkMeetingSchedule;
+    let meetingSchedule = null;
+    if (mtId) {
+      mtId = toMongoObjectId({ value: mtId, key: 'meetingScheduleId' });
+      checkMeetingSchedule = await this.classHasMeetingScheduleService.findOne({
+        classId,
+        meetingScheduleId: mtId,
+        deletedAt: null,
+        status: true,
+      });
+      if (checkMeetingSchedule.statusCode !== 200)
+        return response
+          .status(checkMeetingSchedule.statusCode)
+          .send(checkMeetingSchedule);
+      classHasMeetingScheduleId = checkMeetingSchedule.data._id;
+      meetingSchedule = checkMeetingSchedule.data.meetingScheduleId;
+    } else {
+      checkMeetingSchedule = await this.classHasMeetingScheduleService.list(
+        'startDateASC',
+        {
+          classId,
+          deletedAt: null,
+          status: true,
+        },
+      );
+      if (checkMeetingSchedule.statusCode !== 200)
+        return response
+          .status(checkMeetingSchedule.statusCode)
+          .send(checkMeetingSchedule);
+      classHasMeetingScheduleId = {
+        $in: checkMeetingSchedule.data.map((e) => e._id),
+      };
+    }
+
+    const projectsOb: any = {};
+
+    const projects = await this.projectService.list(sort, {
+      classId,
+      deletedAt: null,
+    });
+    if (projects.statusCode !== 200)
+      return response.status(projects.statusCode).send(projects);
+
+    // if not admin or current role is advisor
+    let projectHasUsers;
+    if (!role.find((e) => e === 2) || currentRole === 1) {
+      projectHasUsers = await this.projectHasUserService.list({
+        role: 2,
+        userId,
+        classId,
+        deletedAt: null,
+      });
+      if (projectHasUsers.statusCode !== 200)
+        return response
+          .status(projectHasUsers.statusCode)
+          .send(projectHasUsers);
+      projects.data
+        .filter((project) =>
+          projectHasUsers.data.find(
+            (p) => p.projectId.toString() === project._id.toString(),
+          ),
+        )
+        .forEach((project) => {
+          projectsOb[project._id] = {
+            ...project._doc,
+            meetingSchedule: [],
+          };
+        });
+    } else {
+      projects.data.forEach((project) => {
+        projectsOb[project._id] = {
+          ...project._doc,
+          meetingSchedule: [],
+        };
+      });
+    }
+
+    const findSendMeetingSchedule =
+      await this.projectSendMeetingSchedulService.list('createdAtASC', {
+        classHasMeetingScheduleId,
+        deletedAt: null,
+      });
+    if (findSendMeetingSchedule.statusCode !== 200)
+      return response
+        .status(findSendMeetingSchedule.statusCode)
+        .send(findSendMeetingSchedule);
+
+    findSendMeetingSchedule.data.forEach((data) => {
+      const sendStatus = data
+        ? data.updatedAt.getTime() <=
+            data.classHasMeetingScheduleId.endDate.getTime() && data.status
+          ? 1
+          : data.status
+          ? 2
+          : 3
+        : 0;
+      projectsOb[data.projectId].meetingSchedule.push({
+        _id: data.classHasMeetingScheduleId.meetingScheduleId,
+        sendStatus,
+      });
+    });
+    response.status(findSendMeetingSchedule.statusCode).send({
+      statusCode: findSendMeetingSchedule.statusCode,
+      message: findSendMeetingSchedule.message,
+      data: meetingSchedule
+        ? { meetingSchedule, project: Object.values(projectsOb) }
+        : { meetingSchedule: 'all', project: Object.values(projectsOb) },
     });
   }
 

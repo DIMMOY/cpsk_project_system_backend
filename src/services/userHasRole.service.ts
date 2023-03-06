@@ -48,15 +48,19 @@ export class UserHasRoleService {
     try {
       const { userId, role } = reqBody;
 
-      await this.userHasRoleModel
-        .updateMany({ userId, deletedAt: null }, { currentRole: false })
-        .populate('userId');
       const res = await this.userHasRoleModel.findOneAndUpdate(
         { userId, deletedAt: null, role },
         { currentRole: true },
       );
 
       if (!res) return { statusCode: 404, message: 'Role Not Found' };
+
+      await this.userHasRoleModel
+        .updateMany(
+          { userId, deletedAt: null, role: { $ne: role } },
+          { currentRole: false },
+        )
+        .populate('userId');
 
       return { statusCode: 200, message: 'Change Current Role Successful' };
     } catch (error) {

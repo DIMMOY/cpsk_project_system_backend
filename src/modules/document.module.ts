@@ -19,6 +19,7 @@ import { UserSchema } from 'src/schema/user.schema';
 import { UserHasRoleSchema } from 'src/schema/userHasRole.schema';
 import { ClassHasDocumentService } from 'src/services/classHasDocument.service';
 import { DocumentService } from 'src/services/document.service';
+import { ProjectService } from 'src/services/project.service';
 import { ProjectHasUserService } from 'src/services/projectHasUser.service';
 import { ProjectSendDocumentService } from 'src/services/projectSendDocument.service';
 import { UserService } from 'src/services/user.service';
@@ -34,6 +35,7 @@ import { UserHasRoleService } from 'src/services/userHasRole.service';
       { name: 'user_has_role', schema: UserHasRoleSchema },
       { name: 'project', schema: ProjectSchema },
       { name: 'project_has_user', schema: ProjectHasUserSchema },
+      { name: 'project', schema: ProjectSchema },
     ]),
   ],
   controllers: [DocumentController],
@@ -44,6 +46,7 @@ import { UserHasRoleService } from 'src/services/userHasRole.service';
     UserService,
     UserHasRoleService,
     ProjectHasUserService,
+    ProjectService,
   ],
   exports: [
     DocumentService,
@@ -67,10 +70,16 @@ export class DocumentModule implements NestModule {
       },
       { path: 'document/:documentId', method: RequestMethod.DELETE },
     );
-    consumer.apply(IsAdminOrAdvisorMiddleware).forRoutes({
-      path: 'class/:classId/document',
-      method: RequestMethod.GET,
-    });
+    consumer.apply(IsAdminOrAdvisorMiddleware).forRoutes(
+      {
+        path: 'class/:classId/document',
+        method: RequestMethod.GET,
+      },
+      {
+        path: 'class/:classId/document/overview',
+        method: RequestMethod.GET,
+      },
+    );
     consumer.apply(IsStudentMiddleware).forRoutes(
       {
         path: 'project/:projectId/document/:documentId',

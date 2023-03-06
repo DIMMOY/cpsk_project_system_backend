@@ -109,6 +109,10 @@ export class MatchCommitteeController {
     const findUserInGroup = await this.matchCommitteHasGroupService.list(null, {
       userId: { $in: userId },
       deletedAt: null,
+      matchCommitteeId: toMongoObjectId({
+        value: committeeId,
+        key: 'committeeId',
+      }),
     });
     if (findUserInGroup.statusCode !== 200)
       return response.status(findUserInGroup.statusCode).send(findUserInGroup);
@@ -269,6 +273,7 @@ export class MatchCommitteeController {
       res = await this.matchCommitteeService.list(sort, {
         classId: toMongoObjectId({ value: classId, key: 'classId' }),
         deletedAt: null,
+        status: true,
       });
     } else {
       res = await this.matchCommitteeService.list(sort, {

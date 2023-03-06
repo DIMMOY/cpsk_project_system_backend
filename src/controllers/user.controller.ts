@@ -9,6 +9,7 @@ import {
   Query,
   Delete,
   Put,
+  Param,
 } from '@nestjs/common';
 import { request } from 'http';
 import { CreateOrUpdateUserDto } from 'src/dto/user.dto';
@@ -23,6 +24,7 @@ import { ClassService } from 'src/services/class.service';
 import { UserService } from 'src/services/user.service';
 import { UserHasRoleService } from 'src/services/userHasRole.service';
 import { UserJoinClassService } from 'src/services/userJoinClass.service';
+import { toMongoObjectId } from 'src/utils/mongoDB.utils';
 @Controller('user')
 export class UserController {
   constructor(
@@ -56,9 +58,10 @@ export class UserController {
     });
   }
 
-  @Get('/role')
-  async findUserInRole(
-    @Query('n') role: number,
+  @Get('/class/:classId')
+  async listUserInClass(
+    @Param('classId') classId: string,
+    @Query('project') hasProject: string,
     @Req() request,
     @Res() response,
   ) {
@@ -68,8 +71,62 @@ export class UserController {
         .status(403)
         .send({ statusCode: 403, message: 'Permission Denied' });
 
+    const findUser = await this.userJoinClassService.findOne({
+      userId,
+      classId: toMongoObjectId({ value: classId, key: 'classId' }),
+      deletedAt: null,
+    });
+    if (findUser.statusCode !== 200)
+      return response.status(findUser.statusCode).send(findUser);
+
+    let res;
+
+    if (hasProject === 'true' || hasProject === 'false') {
+      res = await this.userJoinClassService.findAndCheckHasProject(
+        {
+          classId: toMongoObjectId({ value: classId, key: 'classId' }),
+          deletedAt: null,
+        },
+        hasProject,
+      );
+      response.status(res.statusCode).send({
+        statusCode: res.statusCode,
+        message: res.message,
+        data: res.data.length ? res.data.map((e) => e.user[0]) : [],
+      });
+    } else {
+      res = await this.userJoinClassService.list({
+        classId: toMongoObjectId({ value: classId, key: 'classId' }),
+        deletedAt: null,
+      });
+      response.status(res.statusCode).send({
+        statusCode: res.statusCode,
+        message: res.message,
+        data: res.data.map((e) => e.userId),
+      });
+    }
+  }
+
+  @Get('/role')
+  async findUserInRole(
+    @Query('n') roleSelect: number,
+    @Req() request,
+    @Res() response,
+  ) {
+    const { _id: userId } = request.user;
+    const { role } = request;
+
+    // if user is not admin, roleSelect can be 1 only
+    if (
+      !userId ||
+      (!role.find((e) => e === 2) && (roleSelect === 2 || roleSelect === 0))
+    )
+      return response
+        .status(403)
+        .send({ statusCode: 403, message: 'Permission Denied' });
+
     const res = await this.userHasRoleService.list({
-      role,
+      role: roleSelect,
       deletedAt: null,
     });
     response.status(res.statusCode).send(res);

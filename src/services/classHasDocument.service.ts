@@ -82,6 +82,8 @@ export class ClassHasDocumentService {
       const typeSort = {
         createdAtASC: { createdAt: 1 },
         createdAtDESC: { createdAt: -1 },
+        startDateASC: { startDate: 1 },
+        startDateDESC: { startDate: -1 },
         name: { name: 1 },
       };
 

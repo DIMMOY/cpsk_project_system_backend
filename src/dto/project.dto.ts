@@ -1,3 +1,4 @@
+import { PartialType } from '@nestjs/mapped-types';
 import { Transform, Type } from 'class-transformer';
 import {
   ValidateIf,
@@ -40,3 +41,5 @@ export class ProjectCreateDto {
   )
   advisors: Array<Types.ObjectId>;
 }
+
+export class ProjectUpdateDto extends PartialType(ProjectCreateDto) {}

@@ -66,10 +66,6 @@ export class MatchCommitteeModule implements NestModule {
         method: RequestMethod.POST,
       },
       {
-        path: 'class/:classId/committee',
-        method: RequestMethod.GET,
-      },
-      {
         path: 'class/:classId/committee/:committeeId/date',
         method: RequestMethod.PUT,
       },
@@ -78,9 +74,15 @@ export class MatchCommitteeModule implements NestModule {
         method: RequestMethod.PATCH,
       },
     );
-    consumer.apply(IsAdminOrAdvisorMiddleware).forRoutes({
-      path: 'class/:classId/committee/:committeeId/group',
-      method: RequestMethod.GET,
-    });
+    consumer.apply(IsAdminOrAdvisorMiddleware).forRoutes(
+      {
+        path: 'class/:classId/committee/:committeeId/group',
+        method: RequestMethod.GET,
+      },
+      {
+        path: 'class/:classId/committee',
+        method: RequestMethod.GET,
+      },
+    );
   }
 }

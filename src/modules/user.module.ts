@@ -41,7 +41,6 @@ export class UserModule implements NestModule {
     consumer
       .apply(IsAdminMiddleware)
       .forRoutes(
-        { path: 'user/role', method: RequestMethod.GET },
         { path: 'user/role', method: RequestMethod.POST },
         { path: 'user/role', method: RequestMethod.PUT },
       );
@@ -50,10 +49,12 @@ export class UserModule implements NestModule {
       .forRoutes(
         { path: 'user/class/join', method: RequestMethod.POST },
         { path: 'user/class', method: RequestMethod.GET },
+        { path: 'user/class/:classId', method: RequestMethod.GET },
       );
     consumer
       .apply(AuthMiddleware)
       .forRoutes(
+        { path: 'user/role', method: RequestMethod.GET },
         { path: 'user/last-login', method: RequestMethod.PATCH },
         { path: 'user/current-role', method: RequestMethod.PATCH },
       );

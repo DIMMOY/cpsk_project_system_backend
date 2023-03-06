@@ -56,6 +56,7 @@ export class ProjectService {
         projectId,
         userId,
         role: 1,
+        isAccept: true,
       }));
 
       // advisors
@@ -122,6 +123,88 @@ export class ProjectService {
     } catch (error) {
       console.log(error);
       return { statusCode: 400, message: 'Find Project Error', error };
+    }
+  }
+
+  async update(
+    projectUpdateDto: {
+      userId: Types.ObjectId;
+      classId: Types.ObjectId;
+      nameTH: string;
+      nameEN: string;
+      description: string;
+      partners: Array<Types.ObjectId>;
+      advisors: Array<Types.ObjectId>;
+    },
+    projectId: Types.ObjectId,
+  ): Promise<ResponsePattern> {
+    try {
+      const { classId, nameTH, nameEN, description, partners, advisors } =
+        projectUpdateDto;
+
+      // partners
+      const partnersRole = partners.map((userId) => ({
+        classId,
+        projectId,
+        userId,
+        role: 1,
+        isAccept: true,
+      }));
+
+      await this.projectModel.updateOne(
+        {
+          _id: projectId,
+          deletedAt: null,
+        },
+        { nameTH, nameEN, description },
+      );
+
+      // insert new partners
+      await this.projectHasUserModel.insertMany(partnersRole);
+
+      // delete advisor
+      await this.projectHasUserModel.updateMany(
+        {
+          projectId,
+          classId,
+          userId: { $nin: advisors },
+          role: 2,
+          deletedAt: null,
+        },
+        { deletedAt: new Date() },
+        { timestamps: true },
+      );
+
+      const currentAdvisor = await this.projectHasUserModel.find({
+        projectId,
+        classId,
+        role: 2,
+        deletedAt: null,
+      });
+
+      const newAdvisor = advisors.filter(
+        (id) =>
+          !currentAdvisor.find(
+            (user) => id.toString() === user.userId.toString(),
+          ),
+      );
+
+      // advisors
+      if (newAdvisor.length) {
+        const advisorsRole = newAdvisor.map((userId) => ({
+          classId,
+          projectId,
+          userId,
+          role: 2,
+        }));
+        // update new advisor
+        await this.projectHasUserModel.insertMany(advisorsRole);
+      }
+
+      return { statusCode: 200, message: 'Update Project Successful' };
+    } catch (error) {
+      console.log(error);
+      return { statusCode: 400, message: 'Update Project Error', error };
     }
   }
 }

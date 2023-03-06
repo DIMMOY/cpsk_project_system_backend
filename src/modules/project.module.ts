@@ -54,12 +54,14 @@ export class ProjectModule implements NestModule {
         method: RequestMethod.GET,
       },
     );
-    consumer
-      .apply(IsStudentMiddleware)
-      .forRoutes(
-        { path: 'class/:classId/project', method: RequestMethod.POST },
-        { path: 'class/:classId/student/project', method: RequestMethod.GET },
-      );
+    consumer.apply(IsStudentMiddleware).forRoutes(
+      { path: 'class/:classId/project', method: RequestMethod.POST },
+      { path: 'class/:classId/student/project', method: RequestMethod.GET },
+      {
+        path: 'class/:classId/project/:projectId',
+        method: RequestMethod.PUT,
+      },
+    );
     consumer.apply(AuthMiddleware).forRoutes({
       path: 'class/:classId/project/:projectId/role',
       method: RequestMethod.GET,
