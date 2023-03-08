@@ -26,6 +26,30 @@ export class AssessmentService {
     }
   }
 
+  async findOne(filter: any): Promise<ResponsePattern> {
+    try {
+      const data = await this.assesssmentModel.findOne(filter);
+      if (!data) {
+        return {
+          statusCode: 404,
+          message: 'Assessment Not Found',
+        };
+      }
+      return {
+        statusCode: 200,
+        message: 'Find Assessment Successful',
+        data,
+      };
+    } catch (error) {
+      console.log(error);
+      return {
+        statusCode: 400,
+        message: 'Find Assessment Error',
+        error,
+      };
+    }
+  }
+
   async list(sort: string | null, filter: any): Promise<ResponsePattern> {
     try {
       const typeSort = {

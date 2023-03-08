@@ -12,7 +12,7 @@ import {
   Param,
 } from '@nestjs/common';
 import { request } from 'http';
-import { CreateOrUpdateUserDto } from 'src/dto/user.dto';
+import { ChangeDisplayNameUserDto, ChangeImageUserDto } from 'src/dto/user.dto';
 import {
   ChangeCurrentRoleDto,
   CreateUserInRoleDto,
@@ -132,6 +132,16 @@ export class UserController {
     response.status(res.statusCode).send(res);
   }
 
+  @Get('/name')
+  async getDisplayName(@Req() request, @Res() response) {
+    const { email } = request.user;
+    const res = await this.userService.findOne({
+      email,
+      deletedAt: null,
+    });
+    response.status(res.statusCode).send(res);
+  }
+
   @Post('/role')
   async addUserInRole(@Body() reqBody: CreateUserInRoleDto, @Res() response) {
     const { email, role } = reqBody;
@@ -244,7 +254,7 @@ export class UserController {
 
   @Patch('/last-login')
   async updateLastLoginAt(
-    @Body() reqBody: CreateOrUpdateUserDto,
+    @Body() reqBody: ChangeImageUserDto,
     @Req() request,
     @Res() response,
   ) {
@@ -254,6 +264,21 @@ export class UserController {
       email,
       lastLoginAt,
       ...reqBody,
+    });
+    response.status(res.statusCode).send(res);
+  }
+
+  @Patch('/name')
+  async updateDisplayName(
+    @Body() reqBody: ChangeDisplayNameUserDto,
+    @Req() request,
+    @Res() response,
+  ) {
+    const { email } = request.user;
+    const { name, surname } = reqBody;
+    const res = await this.userService.createOrUpdate({
+      email,
+      displayName: `${name} ${surname}`,
     });
     response.status(res.statusCode).send(res);
   }

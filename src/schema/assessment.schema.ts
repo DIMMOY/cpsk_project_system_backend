@@ -15,6 +15,8 @@ class Form {
   @Prop({ required: true })
   limitScore: number;
 
+  // 1 Audio Mode
+  // 2 TextField Mode
   @Prop({ required: true })
   type: number;
 }

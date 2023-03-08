@@ -34,7 +34,7 @@ export class ClassHasAssessmentCreateDto {
   @Transform(({ value, key }) =>
     value.map((id) => toMongoObjectId({ value: id, key })),
   )
-  matchCommitteeId: Array<string>;
+  matchCommitteeId: Array<Types.ObjectId>;
 }
 
 export class ClassHasAssessmentBodyDto extends PickType(

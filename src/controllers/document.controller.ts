@@ -298,10 +298,12 @@ export class DocumentController {
           ? 1
           : 2
         : 0;
-      projectsOb[data.projectId].document.push({
-        _id: data.classHasDocumentId.documentId,
-        sendStatus,
-      });
+      if (projectsOb[data.projectId]) {
+        projectsOb[data.projectId].document.push({
+          _id: data.classHasDocumentId.documentId,
+          sendStatus,
+        });
+      }
     });
 
     response.status(findSendDocument.statusCode).send({

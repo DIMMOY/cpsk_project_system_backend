@@ -8,15 +8,18 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { AssessmentController } from 'src/controllers/assessment.controller';
 import { IsAdminMiddleware } from 'src/middleware/isAdmin.middleware';
 import { IsAdminOrAdvisorMiddleware } from 'src/middleware/isAdminOrAdvisor.middleware';
+import { IsAdvisorMiddleware } from 'src/middleware/isAdvisor.middleware';
 import { AssessmentSchema } from 'src/schema/assessment.schema';
 import { ClassHasAssessmentSchema } from 'src/schema/classHasAssessment.schema';
 import { ProjectSchema } from 'src/schema/project.schema';
+import { ProjectHasAssessmentSchema } from 'src/schema/projectHasAssessment.schema';
 import { ProjectHasUserSchema } from 'src/schema/projectHasUser.schema';
 import { UserSchema } from 'src/schema/user.schema';
 import { UserHasRoleSchema } from 'src/schema/userHasRole.schema';
 import { AssessmentService } from 'src/services/assessment.service';
 import { ClassHasAssessmentService } from 'src/services/classHasAssessment.service';
 import { ProjectService } from 'src/services/project.service';
+import { ProjectHasAssessmentService } from 'src/services/projectHasAssessment.service';
 import { ProjectHasUserService } from 'src/services/projectHasUser.service';
 import { UserService } from 'src/services/user.service';
 import { UserHasRoleService } from 'src/services/userHasRole.service';
@@ -29,6 +32,7 @@ import { UserHasRoleService } from 'src/services/userHasRole.service';
       { name: 'user_has_role', schema: UserHasRoleSchema },
       { name: 'class_has_assessment', schema: ClassHasAssessmentSchema },
       { name: 'project_has_user', schema: ProjectHasUserSchema },
+      { name: 'project_has_assessment', schema: ProjectHasAssessmentSchema },
       { name: 'project', schema: ProjectSchema },
     ]),
   ],
@@ -40,6 +44,7 @@ import { UserHasRoleService } from 'src/services/userHasRole.service';
     ProjectHasUserService,
     ClassHasAssessmentService,
     ProjectService,
+    ProjectHasAssessmentService,
   ],
   exports: [AssessmentService],
 })
@@ -64,9 +69,21 @@ export class AssessmentModule implements NestModule {
         method: RequestMethod.GET,
       },
       {
-        path: 'class/:classId/assessment/:assessmentId/project/:projectId',
+        path: 'class/:classId/assessment/overview',
+        method: RequestMethod.GET,
+      },
+      {
+        path: 'class/:classId/assessment/detail',
+        method: RequestMethod.GET,
+      },
+      {
+        path: 'class/:classId/assessment/:assessmentId/project/:projectId/form',
         method: RequestMethod.GET,
       },
     );
+    consumer.apply(IsAdvisorMiddleware).forRoutes({
+      path: 'project/:projectId/assessment/:assessmentId',
+      method: RequestMethod.POST,
+    });
   }
 }

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import {
   ClassHasAssessmentCreateDto,
   ClassHasAssessmentStatusDto,
@@ -16,31 +16,26 @@ export class ClassHasAssessmentService {
     private classHasAssessmentModel: Model<ClassHasAssessment>,
   ) {}
 
-  async createOrUpdate(
-    body: ClassHasAssessmentCreateDto,
-  ): Promise<ResponsePattern> {
+  async createOrUpdate(body: {
+    classId: Types.ObjectId;
+    assessmentId: Types.ObjectId;
+    startDate: Date;
+    endDate: Date;
+    matchCommitteeId: Array<Types.ObjectId>;
+    assessment?: any;
+  }): Promise<ResponsePattern> {
     try {
-      const { classId, assessmentId, startDate, endDate, matchCommitteeId } =
-        body;
+      const { classId, assessmentId } = body;
+
       await this.classHasAssessmentModel.updateOne(
         {
-          classId: toMongoObjectId({ value: classId, key: 'classId' }),
-          assessmentId: toMongoObjectId({
-            value: assessmentId,
-            key: 'assessmentId',
-          }),
+          classId,
+          assessmentId,
           deletedAt: null,
         },
         {
-          classId: toMongoObjectId({ value: classId, key: 'classId' }),
-          assessmentId: toMongoObjectId({
-            value: assessmentId,
-            key: 'assessmentId',
-          }),
-          startDate,
-          endDate,
+          ...body,
           status: true,
-          matchCommitteeId,
         },
         { upsert: true },
       );
@@ -62,7 +57,7 @@ export class ClassHasAssessmentService {
     try {
       const data = await this.classHasAssessmentModel
         .findOne(filter)
-        .populate('assessmentId');
+        .populate('matchCommitteeId');
       if (!data) {
         return {
           statusCode: 404,

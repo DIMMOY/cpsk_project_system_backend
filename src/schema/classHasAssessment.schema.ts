@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Types } from 'mongoose';
+import { Assessment } from './assessment.schema';
 
 @Schema({ timestamps: true })
 export class ClassHasAssessment {
@@ -11,6 +12,9 @@ export class ClassHasAssessment {
 
   @Prop({ type: [Types.ObjectId], ref: 'match_committee' })
   matchCommitteeId: Array<Types.ObjectId>;
+
+  @Prop()
+  assessment: Assessment;
 
   @Prop({ default: null })
   startDate: Date;

@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { CreateOrUpdateUserDto } from 'src/dto/user.dto';
+import { ChangeImageUserDto } from 'src/dto/user.dto';
 import { ResponsePattern } from 'src/interfaces/responsePattern.interface';
 import { User } from 'src/schema/user.schema';
 import { UserHasRole } from 'src/schema/userHasRole.schema';
@@ -17,7 +17,8 @@ export class UserService {
 
   async createOrUpdate(body: {
     email: string;
-    lastLoginAt: Date | null;
+    displayName?: string;
+    lastLoginAt?: Date | null;
   }): Promise<ResponsePattern> {
     try {
       const { email } = body;
@@ -28,14 +29,13 @@ export class UserService {
       );
 
       // if new user, create role.
-      const { _id } = findAndUpdateUser;
+      const { _id, displayName } = findAndUpdateUser;
       const findRole = await this.userHasRoleModel
         .find({
           userId: _id,
           deletedAt: null,
         })
         .select({ role: 1, _id: 0, currentRole: 1, userId: 1 });
-      // console.log(findRole)
       let roles: Array<any> | null =
         findRole && findRole.length
           ? findRole.map((a) => ({
@@ -59,7 +59,7 @@ export class UserService {
       return {
         statusCode: 200,
         message: 'Update user successful',
-        data: { userId: _id, role: roles },
+        data: { userId: _id, role: roles, displayName },
       };
     } catch (error) {
       console.log(error);

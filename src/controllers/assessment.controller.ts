@@ -20,9 +20,11 @@ import {
   ClassHasAssessmentBodyDto,
   ClassHasAssessmentStatusBodyDto,
 } from 'src/dto/classHasAssessment.dto';
+import { ProjectHasAssessmentCreateDto } from 'src/dto/projectHasAssessment.dto';
 import { AssessmentService } from 'src/services/assessment.service';
 import { ClassHasAssessmentService } from 'src/services/classHasAssessment.service';
 import { ProjectService } from 'src/services/project.service';
+import { ProjectHasAssessmentService } from 'src/services/projectHasAssessment.service';
 import { ProjectHasUserService } from 'src/services/projectHasUser.service';
 import { toMongoObjectId } from 'src/utils/mongoDB.utils';
 
@@ -34,6 +36,7 @@ export class AssessmentController {
     private readonly assessmentService: AssessmentService,
     private readonly classHasAssessmentService: ClassHasAssessmentService,
     private readonly projectHasUserService: ProjectHasUserService,
+    private readonly projectHasAssessmentService: ProjectHasAssessmentService,
     private readonly projectService: ProjectService,
   ) {}
 
@@ -69,10 +72,24 @@ export class AssessmentController {
     if (findProject.statusCode !== 200)
       return response.status(findProject.statusCode).send(findProject);
 
-    // if not admin
-    // if (!role.find((e) => e === 2)) {
+    // find assessment
+    const findAssessment = await this.classHasAssessmentService.findOne({
+      classId,
+      assessmentId,
+      deletedAt: null,
+      status: true,
+    });
+    if (findAssessment.statusCode !== 200)
+      return response.status(findAssessment.statusCode).send(findAssessment);
 
-    // }
+    const data = { classHasAssessment: {}, project: {} };
+    data.classHasAssessment = findAssessment.data;
+
+    response.status(findAssessment.statusCode).send({
+      statusCode: findAssessment.statusCode,
+      message: findAssessment.message,
+      data,
+    });
   }
 
   @Get(defaultPath)
@@ -81,7 +98,7 @@ export class AssessmentController {
     response.status(res.statusCode).send(res);
   }
 
-  @Get(`class/:classId/${defaultPath}`)
+  @Get(`class/:classId/assessment`)
   async listAssessmentInClass(
     @Param('classId') classId: string,
     @Query('sort') sort: string,
@@ -96,14 +113,14 @@ export class AssessmentController {
         .status(403)
         .send({ statusCode: 403, message: 'Permission Denied' });
 
-    // list all meeting schedules
+    // list all assessments
     const assessments = await this.assessmentService.list(sort, {
       deletedAt: null,
     });
     if (assessments.statusCode !== 200)
       return response.status(assessments.statusCode).send(assessments);
 
-    // list meeting schedule in class
+    // list assessments in class
     const classHasAssessments = await this.classHasAssessmentService.list(
       sort,
       {
@@ -174,9 +191,382 @@ export class AssessmentController {
     });
   }
 
+  @Get(`class/:classId/assessment/overview`)
+  async listProjectHasAssessmentInClass(
+    @Param('classId') classId: string | Types.ObjectId,
+    @Query('id') assessmentId: string | Types.ObjectId,
+    @Query('role') roleInProject: number,
+    @Query('matchCommitteeId') matchCommitteeId: string | Types.ObjectId,
+    @Query('sort') sort: string,
+    @Req() request,
+    @Res() response,
+  ) {
+    const { _id: userId } = request.user;
+    const { role, currentRole } = request;
+    if (!userId)
+      return response
+        .status(403)
+        .send({ statusCode: 403, message: 'Permission Denied' });
+
+    classId = toMongoObjectId({ value: classId, key: 'classId' });
+
+    if (matchCommitteeId) {
+      matchCommitteeId = toMongoObjectId({
+        value: matchCommitteeId,
+        key: 'matchCommitteeId',
+      });
+    }
+
+    let checkAssessment = null;
+    let classHasAssessmentId = null;
+    let assessment = null;
+    if (assessmentId) {
+      assessmentId = toMongoObjectId({
+        value: assessmentId,
+        key: 'assessmentId',
+      });
+
+      if (roleInProject === 3 && matchCommitteeId) {
+        checkAssessment = await this.classHasAssessmentService.findOne({
+          classId,
+          assessmentId,
+          deletedAt: null,
+          status: true,
+          matchCommitteeId,
+        });
+      } else {
+        checkAssessment = await this.classHasAssessmentService.findOne({
+          classId,
+          assessmentId,
+          deletedAt: null,
+          status: true,
+        });
+      }
+      if (checkAssessment.statusCode !== 200)
+        return response
+          .status(checkAssessment.statusCode)
+          .send(checkAssessment);
+      classHasAssessmentId = checkAssessment.data._id;
+      assessment = {
+        ...checkAssessment.data.assessment._doc,
+        matchCommitteeId: checkAssessment.data.matchCommitteeId,
+      };
+
+      if (roleInProject === 2 && assessment.assessBy === 2) {
+        // role is advisor but assessment can assess only committee
+        return response
+          .status(404)
+          .send({ statusCode: 404, message: 'Project Not Found' });
+      }
+      if (roleInProject === 3 && assessment.assessBy === 1) {
+        // role is committee but assessment can assess only advisor
+        return response
+          .status(404)
+          .send({ statusCode: 404, message: 'Project Not Found' });
+      }
+      if (roleInProject !== 2 && roleInProject !== 3) {
+        return response
+          .status(400)
+          .send({ statusCode: 400, message: 'role should be a number 2 or 3' });
+      }
+
+      const projectsOb: any = {};
+
+      const projects = await this.projectService.list(sort, {
+        classId,
+        deletedAt: null,
+      });
+      if (projects.statusCode !== 200)
+        return response.status(projects.statusCode).send(projects);
+
+      // if not admin or current role is advisor
+      let projectHasUsers;
+      if (!role.find((e) => e === 2) || currentRole === 1) {
+        projectHasUsers = await this.projectHasUserService.list({
+          role: roleInProject,
+          matchCommitteeId,
+          userId,
+          classId,
+          isAccept: true,
+          deletedAt: null,
+        });
+        if (projectHasUsers.statusCode !== 200)
+          return response
+            .status(projectHasUsers.statusCode)
+            .send(projectHasUsers);
+        projects.data
+          .filter((project) =>
+            projectHasUsers.data.find(
+              (p) => p.projectId.toString() === project._id.toString(),
+            ),
+          )
+          .forEach((project) => {
+            projectsOb[project._id] = {
+              ...project._doc,
+              assessmentResults: [],
+            };
+          });
+      } else {
+        projects.data.forEach((project) => {
+          projectsOb[project._id] = {
+            ...project._doc,
+            assessmentResults: [],
+          };
+        });
+      }
+
+      const assessBy = roleInProject === 2 ? 1 : 2;
+
+      const filter =
+        roleInProject === 2
+          ? {
+              classHasAssessmentId,
+              deletedAt: null,
+              assessBy,
+            }
+          : {
+              classHasAssessmentId,
+              deletedAt: null,
+              assessBy,
+              matchCommitteeId,
+            };
+      const findProjectHasAssessment =
+        await this.projectHasAssessmentService.list('createdAtASC', filter);
+      if (findProjectHasAssessment.statusCode !== 200)
+        return response
+          .status(findProjectHasAssessment.statusCode)
+          .send(findProjectHasAssessment);
+      findProjectHasAssessment.data.forEach((data) => {
+        if (projectsOb[data.projectId]) {
+          projectsOb[data.projectId].assessmentResults.push(data);
+        }
+      });
+      response.status(findProjectHasAssessment.statusCode).send({
+        statusCode: findProjectHasAssessment.statusCode,
+        message: findProjectHasAssessment.message,
+        data: { assessment, project: Object.values(projectsOb) },
+      });
+    } else {
+      return response
+        .status(404)
+        .send({ statusCode: 404, message: 'Assessment Not Found' });
+    }
+  }
+
+  @Get(`class/:classId/${defaultPath}/:assessmentId/project/:projectId/form`)
+  async getProjectHasAssessmentInClass(
+    @Param('classId') classId: string | Types.ObjectId,
+    @Param('assessmentId') assessmentId: string | Types.ObjectId,
+    @Param('projectId') projectId: string | Types.ObjectId,
+    @Query('role') roleInProject: number,
+    @Query('matchCommitteeId') matchCommitteeId: string | Types.ObjectId,
+    @Query('sort') sort: string,
+    @Req() request,
+    @Res() response,
+  ) {
+    const { _id: userId } = request.user;
+    const { role, currentRole } = request;
+    if (!userId)
+      return response
+        .status(403)
+        .send({ statusCode: 403, message: 'Permission Denied' });
+
+    classId = toMongoObjectId({ value: classId, key: 'classId' });
+    assessmentId = toMongoObjectId({
+      value: assessmentId,
+      key: 'assessmentId',
+    });
+    projectId = toMongoObjectId({ value: projectId, key: 'projectId' });
+
+    const findClassHasAssessment = await this.classHasAssessmentService.findOne(
+      {
+        classId,
+        assessmentId,
+        deletedAt: null,
+      },
+    );
+    if (findClassHasAssessment.statusCode !== 200)
+      return response
+        .status(findClassHasAssessment.statusCode)
+        .send(findClassHasAssessment);
+
+    const {
+      matchCommitteeId: matchCommitteeIdArray,
+      _id: classHasAssessmentId,
+    } = findClassHasAssessment.data;
+    const { assessBy } = findClassHasAssessment.data.assessment;
+
+    // if not admin or current role is advisor
+    if (!role.find((e) => e === 2) || currentRole === 1) {
+      const checkPermission = await this.projectHasUserService.findOne({
+        projectId,
+        userId,
+        deletedAt: null,
+        role: { $in: [2, 3] },
+        isAccept: true,
+      });
+      if (checkPermission.statusCode !== 200)
+        return response
+          .status(403)
+          .send({ statusCode: 403, message: 'Permission Denied' });
+      const { role, matchCommitteeId } = checkPermission.data;
+      if (assessBy === 1 && role === 3) {
+        // assessBy advisor only, but user is committee
+        return response
+          .status(403)
+          .send({ statusCode: 403, message: 'Permission Denied' });
+      } else if (assessBy === 2 && role === 2) {
+        // assessBy committee only, but user is advisor
+        return response
+          .status(403)
+          .send({ statusCode: 403, message: 'Permission Denied' });
+      } else if (
+        role === 3 &&
+        !matchCommitteeIdArray.find(
+          (id) => id.toString() === matchCommitteeId.toString(),
+        )
+      ) {
+        return response
+          .status(403)
+          .send({ statusCode: 403, message: 'Permission Denied' });
+      }
+    }
+
+    const project = await this.projectService.findOne({
+      _id: projectId,
+      classId,
+      deletedAt: null,
+    });
+    if (project.statusCode !== 200)
+      return response.status(project.statusCode).send(project);
+
+    const projectHasAssessment = await this.projectHasAssessmentService.list(
+      'createdAtASC',
+      { projectId, classHasAssessmentId, deleteAt: null },
+    );
+    if (projectHasAssessment.statusCode !== 200)
+      return response
+        .status(projectHasAssessment.statusCode)
+        .send(projectHasAssessment);
+
+    response.status(projectHasAssessment.statusCode).send({
+      statusCode: projectHasAssessment.statusCode,
+      message: projectHasAssessment.message,
+      data: {
+        ...findClassHasAssessment.data._doc,
+        project: project.data,
+        assessmentResults: projectHasAssessment.data,
+      },
+    });
+  }
+
+  @Get(`class/:classId/${defaultPath}/detail`)
+  async getAssessmentInClass(
+    @Param('classId') classId: string | Types.ObjectId,
+    @Query('id') assessmentId: string | Types.ObjectId,
+    @Req() request,
+    @Res() response,
+  ) {
+    classId = toMongoObjectId({ value: classId, key: 'classId' });
+    assessmentId = toMongoObjectId({
+      value: assessmentId,
+      key: 'assessmentId',
+    });
+
+    // get assessment in class
+    const classHasAssessments = await this.classHasAssessmentService.findOne({
+      classId,
+      assessmentId,
+      status: true,
+      deletedAt: null,
+    });
+    if (classHasAssessments.statusCode !== 200)
+      return response
+        .status(classHasAssessments.statusCode)
+        .send(classHasAssessments);
+
+    const matchCommitteeId = classHasAssessments.data.matchCommitteeId.filter(
+      (data) => data.status === true,
+    );
+
+    response.status(200).send({
+      statusCode: classHasAssessments.statusCode,
+      message: classHasAssessments.message,
+      data: { ...classHasAssessments.data._doc, matchCommitteeId },
+    });
+  }
+
   @Post(defaultPath)
   async createAssessment(@Body() body: AssessmentCreateDto, @Res() response) {
     const res = await this.assessmentService.create(body);
+    response.status(res.statusCode).send(res);
+  }
+
+  @Post(`project/:projectId/${defaultPath}/:assessmentId`)
+  async createSendAssessment(
+    @Param('projectId') projectId: string | Types.ObjectId,
+    @Param('assessmentId') assessmentId: string | Types.ObjectId,
+    @Body() body: ProjectHasAssessmentCreateDto,
+    @Req() request,
+    @Res() response,
+  ) {
+    const { _id: userId } = request.user;
+    if (!userId)
+      return response
+        .status(403)
+        .send({ statusCode: 403, message: 'Permission Denied' });
+
+    projectId = toMongoObjectId({ value: projectId, key: 'projectId' });
+    assessmentId = toMongoObjectId({
+      value: assessmentId,
+      key: 'assessmentId',
+    });
+
+    // check project
+    const findProject = await this.projectService.findOne({
+      id: projectId,
+      deletedAt: null,
+    });
+    if (findProject.statusCode !== 200)
+      return response.status(findProject.statusCode).send(findProject);
+
+    // check permission
+    const checkPermission = await this.projectHasUserService.findOne({
+      projectId,
+      userId,
+      deletedAt: null,
+      role: { $in: [2, 3] },
+      isAccept: true,
+    });
+    if (checkPermission.statusCode !== 200)
+      return response
+        .status(403)
+        .send({ statusCode: 403, message: 'Permission Denied' });
+
+    const { role, matchCommitteeId } = checkPermission.data;
+
+    const classId = findProject.data.classId;
+    const checkAssessment = await this.classHasAssessmentService.findOne({
+      classId,
+      assessmentId,
+      deletedAt: null,
+      status: true,
+    });
+    if (checkAssessment.statusCode !== 200)
+      return response.status(checkAssessment.statusCode).send(checkAssessment);
+
+    const { _id: classHasAssessmentId } = checkAssessment.data;
+    const { limitScore } = checkAssessment.data.assessment;
+
+    const res = await this.projectHasAssessmentService.createOrUpdate({
+      projectId,
+      classHasAssessmentId,
+      userId,
+      limitScore,
+      ...body,
+      assessBy: role === 2 ? 1 : 2,
+      matchCommitteeId: matchCommitteeId ? matchCommitteeId : null,
+    });
     response.status(res.statusCode).send(res);
   }
 
@@ -194,14 +584,47 @@ export class AssessmentController {
   }
 
   @Put(`class/:classId/${defaultPath}/:assessmentId/date`)
-  async setDateMeetingScheduleInClass(
-    @Param('classId') classId: string,
-    @Param('assessmentId') assessmentId: string,
+  async setDateAssessmentInClass(
+    @Param('classId') classId: string | Types.ObjectId,
+    @Param('assessmentId') assessmentId: string | Types.ObjectId,
     @Body() body: ClassHasAssessmentBodyDto,
     @Res() response,
   ) {
+    classId = toMongoObjectId({ value: classId, key: 'classId' });
+    assessmentId = toMongoObjectId({
+      value: assessmentId,
+      key: 'assessmentId',
+    });
+
+    const firstTime = await this.classHasAssessmentService.findOne({
+      classId,
+      assessmentId,
+      deletedAt: null,
+    });
+
+    // first time
+    let assessment = null;
+    if (firstTime.statusCode === 404) {
+      const findAssessment = await this.assessmentService.findOne({
+        _id: assessmentId,
+        deletedAt: null,
+      });
+      if (findAssessment.statusCode !== 200)
+        return response.status(findAssessment.statusCode).send(findAssessment);
+      assessment = findAssessment.data;
+    } else if (firstTime.statusCode !== 200)
+      return response.status(firstTime.statusCode).send(firstTime);
+
+    const reqBody: {
+      startDate: Date;
+      endDate: Date;
+      matchCommitteeId: Array<Types.ObjectId>;
+      assessment?: any;
+    } = { ...body };
+    if (assessment) reqBody.assessment = assessment;
+
     const res = await this.classHasAssessmentService.createOrUpdate({
-      ...body,
+      ...reqBody,
       classId,
       assessmentId,
     });
@@ -209,7 +632,7 @@ export class AssessmentController {
   }
 
   @Patch(`class/:classId/${defaultPath}/:assessmentId/date/status`)
-  async changeMeetingScheduleInClass(
+  async changeAssessmentInClass(
     @Param('classId') classId: string,
     @Param('assessmentId') assessmentId: string,
     @Body() body: ClassHasAssessmentStatusBodyDto,

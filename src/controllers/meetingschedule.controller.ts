@@ -325,10 +325,12 @@ export class MeetingScheduleController {
           ? 2
           : 3
         : 0;
-      projectsOb[data.projectId].meetingSchedule.push({
-        _id: data.classHasMeetingScheduleId.meetingScheduleId,
-        sendStatus,
-      });
+      if (projectsOb[data.projectId]) {
+        projectsOb[data.projectId].meetingSchedule.push({
+          _id: data.classHasMeetingScheduleId.meetingScheduleId,
+          sendStatus,
+        });
+      }
     });
     response.status(findSendMeetingSchedule.statusCode).send({
       statusCode: findSendMeetingSchedule.statusCode,
