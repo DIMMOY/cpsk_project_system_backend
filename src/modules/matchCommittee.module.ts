@@ -22,6 +22,7 @@ import { ClassService } from 'src/services/class.service';
 import { ProjectSchema } from 'src/schema/project.schema';
 import { ProjectService } from 'src/services/project.service';
 import { IsAdminOrAdvisorMiddleware } from 'src/middleware/isAdminOrAdvisor.middleware';
+import { IsAdvisorMiddleware } from 'src/middleware/isAdvisor.middleware';
 
 @Module({
   imports: [
@@ -73,6 +74,10 @@ export class MatchCommitteeModule implements NestModule {
         path: 'class/:classId/committee/:committeeId/date/status',
         method: RequestMethod.PATCH,
       },
+      {
+        path: 'class/:classId/committee/:committeeId/group/:groupId',
+        method: RequestMethod.DELETE,
+      },
     );
     consumer.apply(IsAdminOrAdvisorMiddleware).forRoutes(
       {
@@ -84,5 +89,9 @@ export class MatchCommitteeModule implements NestModule {
         method: RequestMethod.GET,
       },
     );
+    consumer.apply(IsAdvisorMiddleware).forRoutes({
+      path: 'project/:projectId/committee/:committeeId/date',
+      method: RequestMethod.PATCH,
+    });
   }
 }

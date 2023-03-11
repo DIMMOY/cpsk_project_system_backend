@@ -22,7 +22,7 @@ export class ProjectHasAssessmentService {
     rawScore: number;
     sumScore: number;
     assessBy: number;
-    matchCommitteeId: Types.ObjectId | null;
+    matchCommitteeId: string | Types.ObjectId | null;
     feedBack: string | null;
   }): Promise<ResponsePattern> {
     try {
@@ -63,8 +63,7 @@ export class ProjectHasAssessmentService {
     try {
       const data = await this.projectHasAssessmentModel
         .findOne(filter)
-        .populate('classHasAssessmentId')
-        .populate('assessmentId');
+        .populate('classHasAssessmentId');
       if (!data) {
         return {
           statusCode: 404,
@@ -86,7 +85,11 @@ export class ProjectHasAssessmentService {
     }
   }
 
-  async list(sort: string | null, filter: any): Promise<ResponsePattern> {
+  async list(
+    sort: string | null,
+    filter: any,
+    select?: any,
+  ): Promise<ResponsePattern> {
     try {
       const typeSort = {
         createdAtASC: { createdAt: 1 },
@@ -101,8 +104,10 @@ export class ProjectHasAssessmentService {
         .find(filter, null, {
           sort: sortSelect,
         })
+        .select(select ? select : {})
         .populate('classHasAssessmentId')
-        .populate('userId');
+        .populate('userId')
+        .populate('matchCommitteeId');
       return {
         statusCode: 200,
         message: 'List ProjectHasAssessment Successful',

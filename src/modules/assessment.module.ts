@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AssessmentController } from 'src/controllers/assessment.controller';
+import { AuthMiddleware } from 'src/middleware/auth.middleware';
 import { IsAdminMiddleware } from 'src/middleware/isAdmin.middleware';
 import { IsAdminOrAdvisorMiddleware } from 'src/middleware/isAdminOrAdvisor.middleware';
 import { IsAdvisorMiddleware } from 'src/middleware/isAdvisor.middleware';
@@ -81,9 +82,19 @@ export class AssessmentModule implements NestModule {
         method: RequestMethod.GET,
       },
     );
-    consumer.apply(IsAdvisorMiddleware).forRoutes({
+    consumer.apply(IsAdvisorMiddleware).forRoutes(
+      {
+        path: 'project/:projectId/assessment/:assessmentId',
+        method: RequestMethod.POST,
+      },
+      {
+        path: 'assessment/form/:formId',
+        method: RequestMethod.DELETE,
+      },
+    );
+    consumer.apply(AuthMiddleware).forRoutes({
       path: 'project/:projectId/assessment/:assessmentId',
-      method: RequestMethod.POST,
+      method: RequestMethod.GET,
     });
   }
 }

@@ -164,26 +164,27 @@ export class ProjectController {
           .status(404)
           .send({ statusCode: 404, message: 'Query Not Found' });
       }
-      projects.data
-        .filter((project) =>
-          projectHasUsers.data.find(
-            (p) => p.projectId.toString() === project._id.toString(),
-          ),
-        )
-        .forEach((project) => {
-          projectsOb[project._id] = {
-            ...project._doc,
-            student: [],
-            advisor: [],
-            committeeGroupId: null,
-            committee: [],
-          };
-        });
+
+      const filterProject = projects.data.filter((project) =>
+        projectHasUsers.data.find(
+          (p) => p.projectId.toString() === project._id.toString(),
+        ),
+      );
+      filterProject.forEach((project) => {
+        projectsOb[project._id] = {
+          ...project._doc,
+          student: [],
+          advisor: [],
+          committeeGroupId: null,
+          committee: [],
+          startDate: null,
+        };
+      });
       filter = {
         classId: toMongoObjectId({ value: classId, key: 'classId' }),
         deletedAt: null,
         isAccept: true,
-        projectId: { $in: [projects.data.map((project) => project._id)] },
+        projectId: { $in: filterProject.map((project) => project._id) },
       };
     } else {
       projects.data.forEach((project) => {
@@ -193,6 +194,7 @@ export class ProjectController {
           advisor: [],
           committeeGroupId: null,
           committee: [],
+          startDate: null,
         };
       });
       filter = {
@@ -230,6 +232,8 @@ export class ProjectController {
               );
               projectsOb[projectHasUser.projectId].committeeGroupId =
                 projectHasUser.matchCommitteeHasGroupId;
+              projectsOb[projectHasUser.projectId].startDate =
+                projectHasUser.startDate;
             }
           } else {
             projectsOb[projectHasUser.projectId].committee.push(
@@ -388,12 +392,17 @@ export class ProjectController {
         projectId: toMongoObjectId({ value: projectId, key: 'classId' }),
         deletedAt: null,
       },
-      { role: 1, _id: 0 },
+      { role: 1, _id: 0, matchCommitteId: 1 },
     );
     const { statusCode, message } = res;
-    response
-      .status(statusCode)
-      .send({ statusCode, message, data: res.data.map((e) => e.role) });
+    response.status(statusCode).send({
+      statusCode,
+      message,
+      data: res.data.map((e) => ({
+        role: e.role,
+        matchCommitteeId: e.matchCommitteeId ? e.matchCommitteeId._id : null,
+      })),
+    });
   }
 
   @Put(`class/:classId/${defaultPath}/:projectId`)

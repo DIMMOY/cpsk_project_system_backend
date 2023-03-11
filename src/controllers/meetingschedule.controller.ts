@@ -329,6 +329,7 @@ export class MeetingScheduleController {
         projectsOb[data.projectId].meetingSchedule.push({
           _id: data.classHasMeetingScheduleId.meetingScheduleId,
           sendStatus,
+          detail: data.detail,
         });
       }
     });

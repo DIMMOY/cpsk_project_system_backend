@@ -37,6 +37,10 @@ export class ProjectHasUser {
   })
   matchCommitteeHasGroupId: Types.ObjectId;
 
+  // if role = 3 (committee)
+  @Prop({ default: null })
+  startDate: Date;
+
   @Prop()
   createdAt: Date;
 

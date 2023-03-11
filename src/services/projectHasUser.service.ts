@@ -80,12 +80,44 @@ export class ProjectHasUserService {
       await this.projectHasUserModel.updateMany(
         filter,
         { deletedAt: new Date() },
-        { timestamps: true },
+        { timestamps: false },
       );
-      return { statusCode: 200, message: 'Delete Document Successful' };
+      return { statusCode: 200, message: 'Delete ProjectHasUser Successful' };
     } catch (error) {
       console.error(error);
-      return { statusCode: 400, message: 'Delete Document Error', error };
+      return { statusCode: 400, message: 'Delete ProjectHasUser Error', error };
+    }
+  }
+
+  async updateOne(filter, body): Promise<ResponsePattern> {
+    try {
+      await this.projectHasUserModel.updateOne(filter, body, {
+        runValidators: true,
+      });
+      return { statusCode: 200, message: 'Update ProjectHasUser Successful' };
+    } catch (error) {
+      console.error(error);
+      return {
+        statusCode: 400,
+        message: 'Update ProjectHasUser Error',
+        error,
+      };
+    }
+  }
+
+  async updateMany(filter, body): Promise<ResponsePattern> {
+    try {
+      await this.projectHasUserModel.updateMany(filter, body, {
+        runValidators: true,
+      });
+      return { statusCode: 200, message: 'Update ProjectHasUser Successful' };
+    } catch (error) {
+      console.error(error);
+      return {
+        statusCode: 400,
+        message: 'Update ProjectHasUser Error',
+        error,
+      };
     }
   }
 }

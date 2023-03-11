@@ -1,17 +1,11 @@
-import { Transform, Type } from 'class-transformer';
 import {
-  ValidateIf,
   IsString,
-  IsISO8601,
-  IsIn,
   IsNotEmpty,
   IsArray,
-  ArrayMinSize,
-  ArrayNotEmpty,
   IsNumber,
-  ValidateNested,
+  IsNumberString,
+  ValidateIf,
 } from 'class-validator';
-import { Types } from 'mongoose';
 
 export class ProjectHasAssessmentCreateDto {
   @IsArray()
@@ -19,12 +13,15 @@ export class ProjectHasAssessmentCreateDto {
   @IsNumber({}, { each: true })
   form: Array<number>;
 
-  @IsNumber()
+  @IsNumberString({
+    message: 'Value must be a valid number',
+  })
   sumScore: number;
 
   @IsNumber()
   rawScore: number;
 
+  @ValidateIf((o) => o.feedBack != null)
   @IsString()
   feedBack: string | null;
 }

@@ -41,6 +41,9 @@ export class AuthMiddleware implements NestMiddleware {
 
       request.user = userData.data ? userData.data : decoded;
       request.role = userHasRoleData.data.map((e) => e.role);
+      request.currentRole = userHasRoleData.data.find((e) => e.currentRole)
+        ? userHasRoleData.data.find((e) => e.currentRole).role
+        : null;
 
       next();
     } catch (error) {

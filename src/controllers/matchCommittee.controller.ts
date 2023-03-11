@@ -11,6 +11,8 @@ import {
   Res,
   Req,
 } from '@nestjs/common';
+import { request } from 'http';
+import { Types } from 'mongoose';
 import {
   MatchCommitteeCreateDto,
   MatchCommitteeSetDateDto,
@@ -345,11 +347,67 @@ export class MatchCommitteeController {
         status: true,
       },
     );
+
+    await this.projectHasUserService.updateMany(
+      {
+        matchCommitteeId: toMongoObjectId({
+          value: committeeId,
+          key: 'committeeId',
+        }),
+        classId: toMongoObjectId({ value: classId, key: 'classId' }),
+        deletedAt: null,
+      },
+      body,
+    );
+    response.status(res.statusCode).send(res);
+  }
+
+  @Patch(`project/:projectId/${defaultPath}/:committeeId/date`)
+  async changeStartDateOfMatchCommitteeInProject(
+    @Param('projectId') projectId: string,
+    @Param('committeeId') committeeId: string,
+    @Body() body: MatchCommitteeSetDateDto,
+    @Req() request,
+    @Res() response,
+  ) {
+    const { _id: userId } = request.user;
+
+    const findData = await this.projectHasUserService.findOne({
+      matchCommitteeId: toMongoObjectId({
+        value: committeeId,
+        key: 'committeeId',
+      }),
+      userId,
+      projectId: toMongoObjectId({ value: projectId, key: 'projectId' }),
+      deletedAt: null,
+      role: 3,
+      isAccept: true,
+    });
+
+    if (findData.statusCode !== 200)
+      return response.status(findData.statusCode).send(findData);
+
+    const { matchCommitteeHasGroupId } = findData.data;
+
+    const res = await this.projectHasUserService.updateMany(
+      {
+        matchCommitteeId: toMongoObjectId({
+          value: committeeId,
+          key: 'committeeId',
+        }),
+        matchCommitteeHasGroupId,
+        projectId: toMongoObjectId({ value: projectId, key: 'projectId' }),
+        deletedAt: null,
+        role: 3,
+        isAccept: true,
+      },
+      body,
+    );
     response.status(res.statusCode).send(res);
   }
 
   @Patch(`class/:classId/${defaultPath}/:committeeId/date/status`)
-  async changeMeetingScheduleInClass(
+  async changeMatchCommitteeInClass(
     @Param('classId') classId: string,
     @Param('committeeId') committeeId: string,
     @Body() body: MatchCommitteeSetStatusDto,
@@ -367,5 +425,52 @@ export class MatchCommitteeController {
       },
     );
     response.status(res.statusCode).send(res);
+  }
+
+  @Delete(`/class/:classId/${defaultPath}/:committeeId/group/:groupId`)
+  async deleteGroupMatchCommitteeInClass(
+    @Param('committeeId') committeeId: string | Types.ObjectId,
+    @Param('classId') classId: string | Types.ObjectId,
+    @Param('groupId') groupId: string | Types.ObjectId,
+    @Res() response,
+  ) {
+    classId = toMongoObjectId({ value: classId, key: 'classId' });
+    committeeId = toMongoObjectId({ value: committeeId, key: 'committeeId' });
+    groupId = toMongoObjectId({ value: groupId, key: 'groupId' });
+
+    // check class
+    const findClass = await this.classService.findOne({
+      _id: classId,
+      deletedAt: null,
+    });
+    if (findClass.statusCode !== 200)
+      return response.status(findClass.statusCode).send(findClass);
+
+    // check committee
+    const findMatchCommittee = await this.matchCommitteeService.findOne({
+      _id: committeeId,
+      classId,
+      deletedAt: null,
+    });
+    if (findMatchCommittee.statusCode !== 200)
+      return response
+        .status(findMatchCommittee.statusCode)
+        .send(findMatchCommittee);
+
+    const deleteGroup = await this.matchCommitteHasGroupService.deleteMany({
+      _id: groupId,
+      matchCommitteeId: committeeId,
+      deletedAt: null,
+    });
+    if (deleteGroup.statusCode !== 200)
+      return response.status(deleteGroup.statusCode).send(deleteGroup);
+
+    const deletePermission = await this.projectHasUserService.deleteMany({
+      matchCommitteeId: committeeId,
+      matchCommitteeHasGroupId: groupId,
+      role: 3,
+      deletedAt: null,
+    });
+    response.status(deleteGroup.statusCode).send(deleteGroup);
   }
 }

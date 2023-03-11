@@ -86,4 +86,25 @@ export class MatchCommitteeHasGroupService {
       };
     }
   }
+
+  async deleteMany(filter: any): Promise<ResponsePattern> {
+    try {
+      await this.matchCommitteeHasGroupModel.updateMany(
+        filter,
+        { deletedAt: new Date() },
+        { timestamps: false },
+      );
+      return {
+        statusCode: 200,
+        message: 'Delete Match Committee Has Group Successful',
+      };
+    } catch (error) {
+      console.error(error);
+      return {
+        statusCode: 400,
+        message: 'Delete Match Committee Has Group Error',
+        error,
+      };
+    }
+  }
 }
