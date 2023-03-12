@@ -17,6 +17,7 @@ import { ProjectHasUserSchema } from 'src/schema/projectHasUser.schema';
 import { ProjectSendDocumentSchema } from 'src/schema/projectSendDocument.schema';
 import { UserSchema } from 'src/schema/user.schema';
 import { UserHasRoleSchema } from 'src/schema/userHasRole.schema';
+import { UserJoinClassSchema } from 'src/schema/userJoinClass.schema';
 import { ClassHasDocumentService } from 'src/services/classHasDocument.service';
 import { DocumentService } from 'src/services/document.service';
 import { ProjectService } from 'src/services/project.service';
@@ -24,6 +25,7 @@ import { ProjectHasUserService } from 'src/services/projectHasUser.service';
 import { ProjectSendDocumentService } from 'src/services/projectSendDocument.service';
 import { UserService } from 'src/services/user.service';
 import { UserHasRoleService } from 'src/services/userHasRole.service';
+import { UserJoinClassService } from 'src/services/userJoinClass.service';
 
 @Module({
   imports: [
@@ -36,6 +38,7 @@ import { UserHasRoleService } from 'src/services/userHasRole.service';
       { name: 'project', schema: ProjectSchema },
       { name: 'project_has_user', schema: ProjectHasUserSchema },
       { name: 'project', schema: ProjectSchema },
+      { name: 'user_join_class', schema: UserJoinClassSchema },
     ]),
   ],
   controllers: [DocumentController],
@@ -47,6 +50,7 @@ import { UserHasRoleService } from 'src/services/userHasRole.service';
     UserHasRoleService,
     ProjectHasUserService,
     ProjectService,
+    UserJoinClassService,
   ],
   exports: [
     DocumentService,

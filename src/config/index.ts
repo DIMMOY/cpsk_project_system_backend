@@ -13,6 +13,7 @@ export const {
   COOKIE_SAMESITE,
   SESSION_TIME_MILLI,
   DEFAULT_PATH,
+  FRONT_END_URL,
 } = process.env;
 
 // Mongo Database
@@ -29,4 +30,7 @@ export const {
   FB_MESSAGINGSENDERID,
   FB_APPID,
   FB_MEASUREMENTID,
+
+  FB_GMAIL,
+  FB_PASSWORD,
 } = process.env;

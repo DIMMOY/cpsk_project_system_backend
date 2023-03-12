@@ -87,6 +87,20 @@ export class UserJoinClassService {
     }
   }
 
+  async deleteOne(filter): Promise<ResponsePattern> {
+    try {
+      await this.userJoinClassModel.updateOne(
+        filter,
+        { deletedAt: new Date() },
+        { timestamps: false },
+      );
+      return { statusCode: 200, message: 'Delete User In Class Successful' };
+    } catch (error) {
+      console.error(error);
+      return { statusCode: 400, message: 'Delete User In Class Error', error };
+    }
+  }
+
   async findAndCheckHasProject(
     filter: any,
     hasProject: string,

@@ -30,20 +30,23 @@ export class AuthMiddleware implements NestMiddleware {
         email,
         deletedAt: null,
       });
-      if (userData.statusCode !== 200)
+      if (userData.statusCode === 404 && email.indexOf('@ku.th') !== -1) {
+        request.user = { email, _id: null };
+      } else if (userData.statusCode !== 200) {
         return response.status(userData.statusCode).send(userData);
+      } else {
+        // find All Role
+        const userHasRoleData = await this.userHasRoleService.list({
+          userId: userData.data._id,
+          deletedAt: null,
+        });
 
-      // find All Role
-      const userHasRoleData = await this.userHasRoleService.list({
-        userId: userData.data._id,
-        deletedAt: null,
-      });
-
-      request.user = userData.data ? userData.data : decoded;
-      request.role = userHasRoleData.data.map((e) => e.role);
-      request.currentRole = userHasRoleData.data.find((e) => e.currentRole)
-        ? userHasRoleData.data.find((e) => e.currentRole).role
-        : null;
+        request.user = userData.data ? userData.data : decoded;
+        request.role = userHasRoleData.data.map((e) => e.role);
+        request.currentRole = userHasRoleData.data.find((e) => e.currentRole)
+          ? userHasRoleData.data.find((e) => e.currentRole).role
+          : null;
+      }
 
       next();
     } catch (error) {

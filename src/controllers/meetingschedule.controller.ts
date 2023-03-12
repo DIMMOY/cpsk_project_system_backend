@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common';
 import { request } from 'http';
 import { Types } from 'mongoose';
+import { FRONT_END_URL } from 'src/config';
 import {
   ClassHasMeetingScheduleBodyDto,
   ClassHasMeetingScheduleStatusBodyDto,
@@ -30,7 +31,9 @@ import { MeetingScheduleService } from 'src/services/meetingSchedule.service';
 import { ProjectService } from 'src/services/project.service';
 import { ProjectHasUserService } from 'src/services/projectHasUser.service';
 import { ProjectSendMeetingScheduleService } from 'src/services/projectSendMeetingSchedule.service';
+import { UserJoinClassService } from 'src/services/userJoinClass.service';
 import { toMongoObjectId } from 'src/utils/mongoDB.utils';
+import { sendNotification } from 'src/utils/notification.utils';
 
 const defaultPath = 'meeting-schedule';
 
@@ -42,6 +45,7 @@ export class MeetingScheduleController {
     private readonly projectSendMeetingSchedulService: ProjectSendMeetingScheduleService,
     private readonly projectHasUserService: ProjectHasUserService,
     private readonly projectService: ProjectService,
+    private readonly userJoinClassService: UserJoinClassService,
   ) {}
 
   @Get(defaultPath)
@@ -499,6 +503,35 @@ export class MeetingScheduleController {
       detail,
       status: false,
     });
+
+    // find Advisor
+    const advisor = await this.projectHasUserService.list({
+      role: 2,
+      projectId: toMongoObjectId({
+        value: projectId,
+        key: 'projectId',
+      }),
+      deletedAt: null,
+      isAccept: true,
+    });
+
+    // find meetingSchedule
+    const meetingSchedule = await this.meetingScheduleService.findById(mtId);
+
+    // send notification
+    if (
+      res.statusCode === 200 &&
+      advisor.data &&
+      advisor.data.length &&
+      meetingSchedule
+    ) {
+      const emails = advisor.data.map((data) => data.userId.email);
+      sendNotification({
+        recipients: emails,
+        subject: `ส่ง ${meetingSchedule.data.name}`,
+        text: `โปรเจกต์ ${findUser.data.projectId.nameTH} ได้ทำการส่ง ${meetingSchedule.data.name} เรียบร้อยแล้ว\nสามารถตรวจสอบได้ที่\n${FRONT_END_URL}/class/${findUser.data.classId._id}/project/${findUser.data.projectId._id}/meeting-schedule/${mtId}`,
+      });
+    }
     response.status(res.statusCode).send(res);
   }
 
@@ -518,15 +551,50 @@ export class MeetingScheduleController {
   @Put(`class/:classId/${defaultPath}/:mtId/date`)
   async setDateMeetingScheduleInClass(
     @Param('classId') classId: string,
-    @Param('mtId') meetingScheduleId: string,
+    @Param('mtId') mtId: string,
     @Body() body: ClassHasMeetingScheduleBodyDto,
     @Res() response,
   ) {
+    const { startDate } = body;
+
+    // find meeting schedule
+    const meetingSchedule = await this.meetingScheduleService.findById(mtId);
+    if (meetingSchedule.statusCode !== 200)
+      return response.status(meetingSchedule.statusCode).send(meetingSchedule);
+
     const res = await this.classHasMeetingScheduleService.createOrUpdate({
       ...body,
       classId,
-      meetingScheduleId,
+      meetingScheduleId: mtId,
     });
+
+    // send notification
+    if (res.statusCode === 200) {
+      const userInClass = await this.userJoinClassService.list({
+        classId: toMongoObjectId({ value: classId, key: 'classId' }),
+        deletedAt: null,
+      });
+      if (
+        userInClass.statusCode === 200 &&
+        userInClass.data &&
+        userInClass.data.length
+      ) {
+        const now = new Date(new Date().getTime() + 10000);
+        const sendDate =
+          new Date(startDate).getTime() < now.getTime()
+            ? now
+            : new Date(startDate);
+        console.log(sendDate);
+
+        const emails = userInClass.data.map((data) => data.userId.email);
+        sendNotification({
+          recipients: emails,
+          subject: `กำหนดส่ง ${meetingSchedule.data.name}`,
+          text: `ดูรายละเอียดได้ที่\n${FRONT_END_URL}/meeting-schedule/${mtId}`,
+          sendDate,
+        });
+      }
+    }
     response.status(res.statusCode).send(res);
   }
 
@@ -559,6 +627,11 @@ export class MeetingScheduleController {
         .status(403)
         .send({ statusCode: 403, message: 'Permission Denied' });
 
+    // find meeting schedule
+    const meetingSchedule = await this.meetingScheduleService.findById(mtId);
+    if (meetingSchedule.statusCode !== 200)
+      return response.status(meetingSchedule.statusCode).send(meetingSchedule);
+
     // เช็ค project กับ userId ว่ามีสามารถเข้าถึงได้มั๊ยกรณีเป็น advisor
     const findUser = await this.projectHasUserService.findOne({
       projectId: toMongoObjectId({
@@ -586,6 +659,30 @@ export class MeetingScheduleController {
       }),
       status,
     });
+
+    if (res.statusCode === 200 && status === true) {
+      const projectHasUser = await this.projectHasUserService.list({
+        projectId: toMongoObjectId({
+          value: projectId,
+          key: 'projectId',
+        }),
+        isAccept: true,
+        role: { $in: [0, 1] },
+        deletedAt: null,
+      });
+      if (
+        projectHasUser.statusCode === 200 &&
+        projectHasUser.data &&
+        projectHasUser.data.length
+      ) {
+        const emails = projectHasUser.data.map((data) => data.userId.email);
+        sendNotification({
+          recipients: emails,
+          subject: `ยืนยันการส่ง ${meetingSchedule.data.name}`,
+          text: `อาจารย์ที่ปรึกษาได้ยืนยันการส่ง ${meetingSchedule.data.name} เรียบร้อยแล้ว\nสามารถตรวจสอบได้ที่\n${FRONT_END_URL}/meeting-schedule/${mtId}`,
+        });
+      }
+    }
     response.status(res.statusCode).send(res);
   }
 

@@ -1,4 +1,4 @@
-import { PartialType } from '@nestjs/mapped-types';
+import { PickType } from '@nestjs/mapped-types';
 import {
   ValidateIf,
   IsString,
@@ -24,4 +24,9 @@ export class ClassCreateDto {
   major: string;
 }
 
-export class ClassUpdateDto extends PartialType(ClassCreateDto) {}
+export class ClassUpdateDto extends PickType(ClassCreateDto, [
+  'name',
+  'endDate',
+  'complete',
+  'major',
+]) {}

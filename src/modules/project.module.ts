@@ -22,6 +22,7 @@ import { UserJoinClassSchema } from 'src/schema/userJoinClass.schema';
 import { UserJoinClassService } from 'src/services/userJoinClass.service';
 import { AuthMiddleware } from 'src/middleware/auth.middleware';
 import { IsAdminOrAdvisorMiddleware } from 'src/middleware/isAdminOrAdvisor.middleware';
+import { IsAdvisorMiddleware } from 'src/middleware/isAdvisor.middleware';
 
 @Module({
   imports: [
@@ -54,12 +55,20 @@ export class ProjectModule implements NestModule {
         method: RequestMethod.GET,
       },
     );
+    consumer.apply(IsAdvisorMiddleware).forRoutes({
+      path: 'class/:classId/project/:projectId/accept',
+      method: RequestMethod.PATCH,
+    });
     consumer.apply(IsStudentMiddleware).forRoutes(
       { path: 'class/:classId/project', method: RequestMethod.POST },
       { path: 'class/:classId/student/project', method: RequestMethod.GET },
       {
         path: 'class/:classId/project/:projectId',
         method: RequestMethod.PUT,
+      },
+      {
+        path: 'class/:classId/project/:projectId/leave',
+        method: RequestMethod.DELETE,
       },
     );
     consumer.apply(AuthMiddleware).forRoutes({

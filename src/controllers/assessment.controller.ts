@@ -526,16 +526,26 @@ export class AssessmentController {
     });
     projectId = toMongoObjectId({ value: projectId, key: 'projectId' });
 
+    let classId;
     // find project and permission
-    const findProject = await this.projectHasUserService.findOne({
-      projectId,
-      userId,
-      deletedAt: null,
-    });
-    if (findProject.statusCode !== 200)
-      return response.status(findProject.statusCode).send(findProject);
-
-    const classId = findProject.data.classId._id;
+    if (currentRole === 2) {
+      const findProject = await this.projectService.findOne({
+        _id: projectId,
+        deletedAt: null,
+      });
+      if (findProject.statusCode !== 200)
+        return response.status(findProject.statusCode).send(findProject);
+      classId = findProject.data.classId;
+    } else {
+      const findProject = await this.projectHasUserService.findOne({
+        projectId,
+        userId,
+        deletedAt: null,
+      });
+      if (findProject.statusCode !== 200)
+        return response.status(findProject.statusCode).send(findProject);
+      classId = findProject.data.classId._id;
+    }
 
     // find class has assessment
     const findClassHasAssessment = await this.classHasAssessmentService.findOne(

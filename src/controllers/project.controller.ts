@@ -8,10 +8,16 @@ import {
   Res,
   Put,
   Req,
+  Patch,
+  Delete,
 } from '@nestjs/common';
+import { projectID } from 'firebase-functions/params';
 import { request } from 'http';
 import { Types } from 'mongoose';
-import { ProjectCreateDto as ProjectUpdateDto } from 'src/dto/project.dto';
+import {
+  ProjectAcceptDto,
+  ProjectCreateDto as ProjectUpdateDto,
+} from 'src/dto/project.dto';
 import { ClassService } from 'src/services/class.service';
 import { ProjectService } from 'src/services/project.service';
 import { ProjectHasUserService } from 'src/services/projectHasUser.service';
@@ -178,12 +184,12 @@ export class ProjectController {
           committeeGroupId: null,
           committee: [],
           startDate: null,
+          isAccept: null,
         };
       });
       filter = {
         classId: toMongoObjectId({ value: classId, key: 'classId' }),
         deletedAt: null,
-        isAccept: true,
         projectId: { $in: filterProject.map((project) => project._id) },
       };
     } else {
@@ -213,13 +219,15 @@ export class ProjectController {
 
       projectHasUsers.data.forEach((projectHasUser) => {
         if (projectHasUser.role === 0 || projectHasUser.role === 1) {
-          projectsOb[projectHasUser.projectId].student.push(
-            projectHasUser.userId,
-          );
+          projectsOb[projectHasUser.projectId].student.push({
+            ...projectHasUser.userId._doc,
+            isAccept: projectHasUser.isAccept,
+          });
         } else if (projectHasUser.role === 2) {
-          projectsOb[projectHasUser.projectId].advisor.push(
-            projectHasUser.userId,
-          );
+          projectsOb[projectHasUser.projectId].advisor.push({
+            ...projectHasUser.userId._doc,
+            isAccept: projectHasUser.isAccept,
+          });
         } else {
           // role 3 (committee) will have matchCommitteId in projectHasUser table
           if (matchCommitteeId) {
@@ -227,9 +235,10 @@ export class ProjectController {
               matchCommitteeId ===
               projectHasUser.matchCommitteeId._id.toString()
             ) {
-              projectsOb[projectHasUser.projectId].committee.push(
-                projectHasUser.userId,
-              );
+              projectsOb[projectHasUser.projectId].committee.push({
+                ...projectHasUser.userId._doc,
+                isAccept: projectHasUser.isAccept,
+              });
               projectsOb[projectHasUser.projectId].committeeGroupId =
                 projectHasUser.matchCommitteeHasGroupId;
               projectsOb[projectHasUser.projectId].startDate =
@@ -345,30 +354,33 @@ export class ProjectController {
 
     const projectData = res.data.projectId;
     const { _id: projectId } = projectData;
-    const advisorsAndPartners = await this.projectHasUserService.list({
+    const projectHasUsers = await this.projectHasUserService.list({
       classId: toMongoObjectId({ value: classId, key: 'classId' }),
       projectId,
       deletedAt: null,
     });
-    if (advisorsAndPartners.statusCode !== 200)
-      return response
-        .status(advisorsAndPartners.statusCode)
-        .send(advisorsAndPartners);
+    if (projectHasUsers.statusCode !== 200)
+      return response.status(projectHasUsers.statusCode).send(projectHasUsers);
 
-    const advisors = advisorsAndPartners.data
+    const advisors = projectHasUsers.data
       .filter((e) => e.role === 2)
       .map((e) => e.userId);
-    const partners = advisorsAndPartners.data
+    const partners = projectHasUsers.data
       .filter(
         (e) =>
           (e.role === 0 || e.role === 1) &&
           e.userId._id.toString() !== userId.toString(),
       )
       .map((e) => e.userId);
+    const committees = projectHasUsers.data
+      .filter(
+        (e) => e.role === 3 && e.userId._id.toString() !== userId.toString(),
+      )
+      .map((e) => ({ ...e.userId._doc, matchCommitteeId: e.matchCommitteeId }));
     response.status(res.statusCode).send({
       statusCode: res.statusCode,
       message: res.message,
-      data: { ...projectData._doc, advisors, partners },
+      data: { ...projectData._doc, advisors, partners, committees },
     });
   }
 
@@ -474,6 +486,110 @@ export class ProjectController {
       },
       projectId,
     );
+    response.status(res.statusCode).send(res);
+  }
+
+  @Patch(`class/:classId/${defaultPath}/:projectId/accept`)
+  async acceptProjectByAdvisor(
+    @Param('classId') classId,
+    @Param('projectId') projectId,
+    @Body() body: ProjectAcceptDto,
+    @Req() request,
+    @Res() response,
+  ) {
+    const { _id: userId } = request.user;
+    const { accept } = body;
+    classId = toMongoObjectId({ value: classId, key: 'classId' });
+    projectId = toMongoObjectId({ value: projectId, key: 'projectId' });
+
+    // find project
+    const findProject = await this.projectService.findOne({
+      _id: projectId,
+      classId,
+      deletedAt: null,
+    });
+    if (findProject.statusCode !== 200)
+      return response.status(findProject.statusCode).send(findProject);
+
+    // find project has user
+    const findProjectHasUser = await this.projectHasUserService.findOne({
+      projectId,
+      classId,
+      role: 2,
+      deletedAt: null,
+      userId,
+      isAccept: false,
+    });
+    if (findProjectHasUser.statusCode !== 200)
+      return response
+        .status(findProjectHasUser.statusCode)
+        .send(findProjectHasUser);
+
+    let res;
+    if (accept) {
+      res = await this.projectHasUserService.updateOne(
+        {
+          projectId,
+          classId,
+          role: 2,
+          deletedAt: null,
+          userId,
+          isAccept: false,
+        },
+        { isAccept: true },
+      );
+    } else {
+      res = await this.projectHasUserService.deleteOne({
+        projectId,
+        classId,
+        role: 2,
+        deletedAt: null,
+        userId,
+        isAccept: false,
+      });
+    }
+
+    response.status(res.statusCode).send(res);
+  }
+
+  @Delete(`class/:classId/${defaultPath}/:projectId/leave`)
+  async leaveProject(
+    @Param('classId') classId: string | Types.ObjectId,
+    @Param('projectId') projectId: string | Types.ObjectId,
+    @Req() request,
+    @Res() response,
+  ) {
+    const { _id: userId } = request.user;
+    if (!userId)
+      return response
+        .status(403)
+        .send({ statusCode: 403, message: 'Permission Denied' });
+
+    classId = toMongoObjectId({ value: classId, key: 'classId' });
+    projectId = toMongoObjectId({ value: projectId, key: 'projectId' });
+
+    // check permission
+    const findProjectHasUser = await this.projectHasUserService.findOne({
+      classId,
+      projectId,
+      deletedAt: null,
+      role: { $in: [0, 1] },
+      userId,
+    });
+
+    if (findProjectHasUser.statusCode !== 200)
+      return response
+        .status(findProjectHasUser.statusCode)
+        .send(findProjectHasUser);
+
+    const res = await this.projectHasUserService.deleteOne({
+      classId,
+      projectId,
+      deletedAt: null,
+      role: { $in: [0, 1] },
+      userId,
+    });
+
     response.status(res.statusCode).send(res);
   }
 }

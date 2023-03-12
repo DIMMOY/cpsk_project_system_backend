@@ -89,6 +89,20 @@ export class ProjectHasUserService {
     }
   }
 
+  async deleteOne(filter): Promise<ResponsePattern> {
+    try {
+      await this.projectHasUserModel.updateOne(
+        filter,
+        { deletedAt: new Date() },
+        { timestamps: false },
+      );
+      return { statusCode: 200, message: 'Delete ProjectHasUser Successful' };
+    } catch (error) {
+      console.error(error);
+      return { statusCode: 400, message: 'Delete ProjectHasUser Error', error };
+    }
+  }
+
   async updateOne(filter, body): Promise<ResponsePattern> {
     try {
       await this.projectHasUserModel.updateOne(filter, body, {

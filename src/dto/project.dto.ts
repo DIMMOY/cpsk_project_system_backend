@@ -7,6 +7,7 @@ import {
   ValidateNested,
   ArrayNotEmpty,
   Matches,
+  IsBoolean,
 } from 'class-validator';
 import { Types } from 'mongoose';
 import { toMongoObjectId } from 'src/utils/mongoDB.utils';
@@ -43,3 +44,8 @@ export class ProjectCreateDto {
 }
 
 export class ProjectUpdateDto extends PartialType(ProjectCreateDto) {}
+
+export class ProjectAcceptDto {
+  @IsBoolean()
+  accept: boolean;
+}

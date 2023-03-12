@@ -23,6 +23,20 @@ export class DocumentService {
     }
   }
 
+  async findById(id: string): Promise<ResponsePattern> {
+    try {
+      const data = await this.documentModel.findById(id);
+      return {
+        statusCode: 200,
+        message: 'Find Document Successful',
+        data,
+      };
+    } catch (error) {
+      console.error(error);
+      return { statusCode: 400, message: 'Find Document Error', error };
+    }
+  }
+
   async list(sort: string | null, filter: any): Promise<ResponsePattern> {
     try {
       const typeSort = {

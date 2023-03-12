@@ -18,6 +18,7 @@ import { ProjectHasUserSchema } from 'src/schema/projectHasUser.schema';
 import { ProjectSendMeetingScheduleSchema } from 'src/schema/projectSendMeetingSchedule.schema';
 import { UserSchema } from 'src/schema/user.schema';
 import { UserHasRoleSchema } from 'src/schema/userHasRole.schema';
+import { UserJoinClassSchema } from 'src/schema/userJoinClass.schema';
 import { ClassHasMeetingScheduleService } from 'src/services/classHasMeetingSchedule.service';
 import { MeetingScheduleService } from 'src/services/meetingSchedule.service';
 import { ProjectService } from 'src/services/project.service';
@@ -25,6 +26,7 @@ import { ProjectHasUserService } from 'src/services/projectHasUser.service';
 import { ProjectSendMeetingScheduleService } from 'src/services/projectSendMeetingSchedule.service';
 import { UserService } from 'src/services/user.service';
 import { UserHasRoleService } from 'src/services/userHasRole.service';
+import { UserJoinClassService } from 'src/services/userJoinClass.service';
 
 @Module({
   imports: [
@@ -43,6 +45,7 @@ import { UserHasRoleService } from 'src/services/userHasRole.service';
       { name: 'user_has_role', schema: UserHasRoleSchema },
       { name: 'project_has_user', schema: ProjectHasUserSchema },
       { name: 'project', schema: ProjectSchema },
+      { name: 'user_join_class', schema: UserJoinClassSchema },
     ]),
   ],
   controllers: [MeetingScheduleController],
@@ -54,6 +57,7 @@ import { UserHasRoleService } from 'src/services/userHasRole.service';
     UserHasRoleService,
     ProjectHasUserService,
     ProjectService,
+    UserJoinClassService,
   ],
   exports: [
     MeetingScheduleService,

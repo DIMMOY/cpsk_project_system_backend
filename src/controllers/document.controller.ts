@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { Patch } from '@nestjs/common/decorators';
 import { Types } from 'mongoose';
+import { FRONT_END_URL } from 'src/config';
 import {
   ClassHasDocumentBodyDto,
   ClassHasDocumentStatusBodyDto,
@@ -23,7 +24,9 @@ import { DocumentService } from 'src/services/document.service';
 import { ProjectService } from 'src/services/project.service';
 import { ProjectHasUserService } from 'src/services/projectHasUser.service';
 import { ProjectSendDocumentService } from 'src/services/projectSendDocument.service';
+import { UserJoinClassService } from 'src/services/userJoinClass.service';
 import { toMongoObjectId } from 'src/utils/mongoDB.utils';
+import { sendNotification } from 'src/utils/notification.utils';
 
 const defaultPath = 'document';
 
@@ -35,6 +38,7 @@ export class DocumentController {
     private readonly projectSendDocumentService: ProjectSendDocumentService,
     private readonly projectHasUserService: ProjectHasUserService,
     private readonly projectService: ProjectService,
+    private readonly userJoinClassService: UserJoinClassService,
   ) {}
 
   @Get(defaultPath)
@@ -473,11 +477,47 @@ export class DocumentController {
     @Body() body: ClassHasDocumentBodyDto,
     @Res() response,
   ) {
+    const { startDate } = body;
+
+    // find meeting schedule
+    const document = await this.documentService.findById(documentId);
+    if (document.statusCode !== 200)
+      return response.status(document.statusCode).send(document);
+
     const res = await this.classHasDocumentService.createOrUpdate({
       ...body,
       classId,
       documentId,
     });
+
+    // send notification
+    if (res.statusCode === 200) {
+      const userInClass = await this.userJoinClassService.list({
+        classId: toMongoObjectId({ value: classId, key: 'classId' }),
+        deletedAt: null,
+      });
+      if (
+        userInClass.statusCode === 200 &&
+        userInClass.data &&
+        userInClass.data.length
+      ) {
+        const now = new Date(new Date().getTime() + 10000);
+        const sendDate =
+          new Date(startDate).getTime() < now.getTime()
+            ? now
+            : new Date(startDate);
+        console.log(sendDate);
+
+        const emails = userInClass.data.map((data) => data.userId.email);
+        sendNotification({
+          recipients: emails,
+          subject: `กำหนดส่ง ${document.data.name}`,
+          text: `ดูรายละเอียดได้ที่\n${FRONT_END_URL}/document/${documentId}`,
+          sendDate,
+        });
+      }
+    }
+
     response.status(res.statusCode).send(res);
   }
 

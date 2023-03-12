@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { ClassCreateDto, ClassUpdateDto } from 'src/dto/class.dto';
 import { ResponsePattern } from 'src/interfaces/responsePattern.interface';
 import { Class } from 'src/schema/class.schema';
@@ -102,7 +102,10 @@ export class ClassService {
     }
   }
 
-  async update(_id: string, body: ClassUpdateDto): Promise<ResponsePattern> {
+  async updateById(
+    _id: Types.ObjectId,
+    body: ClassUpdateDto,
+  ): Promise<ResponsePattern> {
     try {
       await this.classModel.updateOne({ _id }, body, {
         runValidators: true,
