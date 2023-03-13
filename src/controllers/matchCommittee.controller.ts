@@ -354,6 +354,7 @@ export class MatchCommitteeController {
           value: committeeId,
           key: 'committeeId',
         }),
+        role: 3,
         classId: toMongoObjectId({ value: classId, key: 'classId' }),
         deletedAt: null,
       },
