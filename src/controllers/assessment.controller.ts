@@ -321,6 +321,7 @@ export class AssessmentController {
             projectsOb[project._id] = {
               ...project._doc,
               assessmentResults: [],
+              students: [],
             };
           });
       } else {
@@ -328,6 +329,7 @@ export class AssessmentController {
           projectsOb[project._id] = {
             ...project._doc,
             assessmentResults: [],
+            students: [],
           };
         });
       }
@@ -358,6 +360,20 @@ export class AssessmentController {
           projectsOb[data.projectId].assessmentResults.push(data);
         }
       });
+
+      const studentInClass = await this.projectHasUserService.list({
+        classId,
+        role: { $in: [0, 1] },
+        deletedAt: null,
+      });
+      if (studentInClass.statusCode !== 200)
+        response.status(studentInClass.statusCode).send(studentInClass);
+      studentInClass.data.forEach((data) => {
+        if (projectsOb[data.projectId]) {
+          projectsOb[data.projectId].students.push(data.userId);
+        }
+      });
+
       response.status(findProjectHasAssessment.statusCode).send({
         statusCode: findProjectHasAssessment.statusCode,
         message: findProjectHasAssessment.message,

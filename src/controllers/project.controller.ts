@@ -377,6 +377,7 @@ export class ProjectController {
         (e) => e.role === 3 && e.userId._id.toString() !== userId.toString(),
       )
       .map((e) => ({ ...e.userId._doc, matchCommitteeId: e.matchCommitteeId }));
+
     response.status(res.statusCode).send({
       statusCode: res.statusCode,
       message: res.message,
@@ -464,25 +465,30 @@ export class ProjectController {
         .send({ statusCode: 403, message: 'Permission Denied' });
 
     // find advisor
+
     const findAdvisor = await this.userHasRoleService.list({
       userId: { $in: advisors },
-      deletedAt: null,
       role: 1,
     });
     if (findAdvisor.statusCode !== 200) {
       return response.status(findAdvisor.statusCode).send(findAdvisor);
     }
-    if (findAdvisor.data.length !== advisors.length) {
-      return response
-        .status(404)
-        .send({ statusCode: 404, message: 'Advisor Not Found' });
-    }
+    // if (findAdvisor.data.length !== advisors.length) {
+    //   return response
+    //     .status(404)
+    //     .send({ statusCode: 404, message: 'Advisor Not Found' });
+    // }
+
+    const filterAdvisor = findAdvisor.data
+      .filter((data) => data.deletedAt === null)
+      .map((data) => data.userId._id);
 
     const res = await this.projectService.update(
       {
         ...reqBody,
         classId,
         userId,
+        advisors: filterAdvisor,
       },
       projectId,
     );

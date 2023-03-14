@@ -299,6 +299,7 @@ export class MeetingScheduleController {
           projectsOb[project._id] = {
             ...project._doc,
             meetingSchedule: [],
+            students: [],
           };
         });
     } else {
@@ -306,6 +307,7 @@ export class MeetingScheduleController {
         projectsOb[project._id] = {
           ...project._doc,
           meetingSchedule: [],
+          students: [],
         };
       });
     }
@@ -337,6 +339,21 @@ export class MeetingScheduleController {
         });
       }
     });
+
+    const studentInClass = await this.projectHasUserService.list({
+      classId,
+      role: { $in: [0, 1] },
+      deletedAt: null,
+    });
+    if (studentInClass.statusCode !== 200)
+      response.status(studentInClass.statusCode).send(studentInClass);
+
+    studentInClass.data.forEach((data) => {
+      if (projectsOb[data.projectId]) {
+        projectsOb[data.projectId].students.push(data.userId);
+      }
+    });
+
     response.status(findSendMeetingSchedule.statusCode).send({
       statusCode: findSendMeetingSchedule.statusCode,
       message: findSendMeetingSchedule.message,

@@ -172,7 +172,7 @@ export class ProjectService {
           deletedAt: null,
         },
         { deletedAt: new Date() },
-        { timestamps: true },
+        { timestamps: false },
       );
 
       const currentAdvisor = await this.projectHasUserModel.find({
@@ -181,6 +181,8 @@ export class ProjectService {
         role: 2,
         deletedAt: null,
       });
+
+      console.log(advisors);
 
       const newAdvisor = advisors.filter(
         (id) =>
