@@ -5,7 +5,12 @@ import { firebaseApp } from './database/db.firebase';
 import { AppModule } from './modules/app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, { cors: true });
+  const app = await NestFactory.create(AppModule);
+  app.enableCors({
+    origin: true,
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    credentials: true,
+  });
   app.setGlobalPrefix('api');
   app.useGlobalPipes(
     new ValidationPipe({
@@ -14,7 +19,6 @@ async function bootstrap() {
     }),
   );
   const port = parseInt(PORT) || 3333;
-  const firebase = firebaseApp;
   await app.listen(port);
   console.log(`PORT: ${port}`);
   console.log(`MONGO_DB: ${MG_URI}`);

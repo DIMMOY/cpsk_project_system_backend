@@ -44,3 +44,4 @@ logs/*
 .env.mongo.database
 .env.firebase.database
 .env.development.local
+.vercel
