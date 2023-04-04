@@ -706,7 +706,7 @@ export class AssessmentController {
 
     // check project
     const findProject = await this.projectService.findOne({
-      id: projectId,
+      _id: projectId,
       deletedAt: null,
     });
     if (findProject.statusCode !== 200)
